@@ -5,7 +5,7 @@ String lastCreated = "";
 boolean dweeted;
 long lastDweet;
 String teleobject = "ticker";
-String thing = "teleobjects";
+String thing = "teleobject";
 
 void initThing() {
   latestDweet = new Dweet();
@@ -56,15 +56,27 @@ void getDweet() {
   }
 }
 
+void sendDweetQuietly(String key_, String value_) {
+  long pingStart = millis();
+  String url = "https://dweet.io:443/dweet/quietly/for/"+thing+"?"+"teleobject="+teleobject+"&"+key_+"="+encode(value_);
+  loadUrl(url);
+  //println(url);
+  //if (buffer != null) {
+  //  latestDweet.parse(buffer[0], false);
+  //  pingTime = int(millis()-pingStart);
+  //  dweetA = 255;
+  //}
+}
+
 void sendDweet(String key_, String value_) {
   long pingStart = millis();
-  String url = "https://thingspace.io/dweet/for/"+thing+"?"+"teleobject="+teleobject+"&"+key_+"="+encode(value_);
+  String url = "https://dweet.io:443/dweet/for/"+thing+"?"+"teleobject="+teleobject+"&"+key_+"="+encode(value_);
   String[] buffer = loadStrings(url);
-  println(url);
+  //println(url);
   if (buffer != null) {
-    latestDweet.parse(buffer[0], false);
-    pingTime = int(millis()-pingStart);
-    dweetA = 255;
+  //  latestDweet.parse(buffer[0], false);
+   pingTime = int(millis()-pingStart);
+  //  dweetA = 255;
   }
 }
 

@@ -84,29 +84,13 @@ class Article {
     }
     news.add(createString("", BLANK, 1, 1, 1));
     news.add(createString(cleanUp(title, true), TICKER, 2, 10, 30));
-    news.add(createString(breakUp(cleanUp(content, true)), TICKER, 2, 10, 40));
+    news.add(createString(cleanUp(content, true), TICKER, 2, 10, 50));
     news.add(createString("", BLANK, 1, 1, 1));
   }
 }
 
-String breakUp(String str) {
-  //String result = "";
-  //if (str.length() > 93) return (str.substring(0, 93)+"...");
-  return str;
-  //while (true) {
-  //  result += (str.length() > CHARS ? str.substring(0, CHARS) : str);
-  //  if (str.length() > CHARS) {
-  //    str = str.substring(CHARS, str.length());
-  //  } else {
-  //    return result;
-  //  }
-  //}
-}
-
-
 String cleanKeyword(String str) {
   int parenthesis = str.indexOf("(");
-  //
   if (parenthesis != -1) {
    str = removeSpaces(str.substring(0, parenthesis-1));
   }

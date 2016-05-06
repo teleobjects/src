@@ -69,7 +69,7 @@ void displayGui() {
   }
   alpha.display();
   // PORT NAME
-  if (debug || true ) {
+  if (debug ) {
     fill(backgroundColor);
     rectMode(CORNER);
     rect(-596, 100, 500, 200);
@@ -82,10 +82,13 @@ void displayGui() {
   if (debug) {
     displayDweet(-596, 150);
   } 
+
+
   popMatrix();
 }
 
 void keyPressed() {
+  println("key pressed");
   if (key >= 48 && key <= 58) {  
     setChannel(key-48);
   }

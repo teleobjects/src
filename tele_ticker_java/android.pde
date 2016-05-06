@@ -1,9 +1,10 @@
 import android.os.Bundle;
 import android.content.Context;
 
+//import android.view.inputmethod.InputMethodManager;
+
 import blepdroid.*;
 import blepdroid.BlepdroidDevice;
-//import com.lannbox.rfduinotest.*;
 import java.util.UUID;
 
 import android.net.wifi.ScanResult;     // required import for scanning networks
@@ -47,6 +48,9 @@ Vibrator vibe;
 long vibeDuration = 5;
 long[] vibeList = { 0, 20, 20, 20, 20 };    
 
+//InputMethodManager imm;
+boolean keyTyped=false;
+boolean keyboard;
 
 ActivityManager activityManager; 
 
@@ -56,12 +60,16 @@ public void onCreate(Bundle savedInstanceState) {
   wifiManager = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
   connMgr  = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
   activityManager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
+  //InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
 }
 
 void initComm() {
   bleBuffer = new ArrayList();
-  Blepdroid.initialize(this);
-  connecting = true;
+
+  //Blepdroid.initialize(this);
+  //connecting = true;
+  //showKeyboard();
+  //println("initcom");
 }
 
 void vibrate() {
@@ -70,6 +78,23 @@ void vibrate() {
 
 void terminateComm() {
 }
+
+void showKeyboard() {
+  //imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
+  keyboard = true;
+}
+
+void hideKeyboard() {
+  //imm.toggleSoftInput(InputMethodManager.HIDE_IMPLICIT_ONLY, 0);
+  keyboard = false;
+}
+
+//void keyTyped() 
+//{
+//  keyTyped=true;
+//  println("key typed");
+//}
+
 
 void beginComm() {
   if (device != null) {
@@ -80,14 +105,28 @@ void beginComm() {
 }
 
 void updateComm() {
+  if (!connecting && !connected) {
+    try {
+      Blepdroid.initialize(this);
+      connecting = true;
+    } 
+    catch (Exception e) {
+      println("error");
+    }
+  }
+  if (connected && connecting) {
+    connecting = false;
+    writeString("", INSTANT, 1, 1, 1);
+    writeString(cleanUp("What's up...?", true), TICKER, 50, 1, 1);
+    refresh = true;
+  }
+
   freeMemory = activityManager.getMemoryClass();
   Runtime rt = Runtime.getRuntime();
   maxMemory = rt.maxMemory() / 1048576;    // convert from bytes to MB
 
   NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
   if (networkInfo != null && networkInfo.isConnected()) {
-    online = true;
-    onlineState = "online";
   } else {
     online = false;
     onlineState = "offline";
@@ -100,6 +139,8 @@ void updateComm() {
   case 3: 
     wifiState = "Wifi enabled"; 
     wifi = true;
+    online = true;
+    onlineState = "online";
     break;
   case 4: 
     wifiState = "Wifi state unknown"; 

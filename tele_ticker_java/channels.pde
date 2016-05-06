@@ -21,6 +21,7 @@ final int NEWS = 114;
 
 final int SETTINGS = 200;
 final int REFRESH = 201;
+final int ACCOUNT = 202;
 
 final int RESULTS = 120;
 
@@ -38,6 +39,21 @@ void setChannel(int thisCommand) {
   boolean flag = false;
 
   switch(thisCommand) {
+  case ACCOUNT:
+    if (!logged) {
+      if (!logging) {
+        writeString("", LOADING, 1, 1, 1);
+        initAccount();
+        logging = true;
+      } else {
+        runFinalizeOAuthChoreo();
+        logging = false;
+        logged = true;
+        writeString("logging in", TICKER, 10, 1, 1);
+      }
+    }
+    break;
+
   case RESULTS:
     play = true;
     channel = thisCommand;
@@ -84,7 +100,8 @@ void setChannel(int thisCommand) {
     break;
 
   case REFRESH:
-    refresh = !refresh;
+    showKeyboard();
+    //refresh = !refresh;
     break;
 
   case USB:

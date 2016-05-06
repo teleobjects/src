@@ -1,12 +1,7 @@
-
-
-boolean dweet, usb, bluetooth, wifi, paired, connecting, connected, ready, online, located, found, forecasted, placed, loggedin, loading, metric = true;
+boolean dweet, usb, bluetooth, wifi, paired, connecting, connected, ready, online, located, found, forecasted, placed, loggedin, loading, logging, logged, metric = true;
 boolean refresh = true;
 boolean play = true;
 boolean direction;
-
-
-
 
 int channel = -1;
 
@@ -22,7 +17,6 @@ boolean debug = false;
 boolean verbose = true;
 boolean android = true;
 
-
 void setup() {
   //println(PFont.list());
   //size(1600, 900);
@@ -31,7 +25,7 @@ void setup() {
     bluetooth = true;
     orientation(LANDSCAPE);
   }
-
+  //
   rectMode(CENTER);
   imageMode(CENTER);
   //smooth();
@@ -57,22 +51,23 @@ void setup() {
 
 
 void draw() {
-  if (connected && connecting) {
-    connecting = false;
-    writeString("", INSTANT, 1, 1, 1);
-    writeString(cleanUp("What's up...?", true), TICKER, 50, 1, 1);
-    //busy = true;
-    refresh = true;
-  }
+
+  
+  updateComm();
 
   if (android) {
     if (location == null) {
-      location = new KetaiLocation(this);
-      location. setUpdateRate(1000, 1);
+      try {
+        location = new KetaiLocation(this);
+        location. setUpdateRate(1000, 1);
+      } 
+      catch (Exception e) {
+        println("error");
+      }
     }
-    updateComm();
   }
-
+  
+  
   /// OSX
   if (!android) {
     //if (connecting);// && millis() - startTime > 1000) {
@@ -87,10 +82,8 @@ void draw() {
   if (!connected) busy = alpha.busy; /// simulator
 
   if (channel == EQ || channel == AXIS) refresh = true;
-
   displayGui();
   updateMic();
-
   refresh = false;
   play();
 }

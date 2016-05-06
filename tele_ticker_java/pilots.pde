@@ -75,6 +75,7 @@ void displayPilots() {
   }
 
 
+
   if (channel == NEWS && articleImage != null) {
     pushMatrix();
     translate(getPilot("news").x, getPilot("news").y-100);
@@ -92,6 +93,21 @@ void displayPilots() {
 
   for (Pilot thisPilot : pilots) {
     thisPilot.display();
+  }
+
+  if (logged && profileImage != null) {
+    pushMatrix();
+    translate(getPilot("account").x, getPilot("account").y);
+    pushMatrix();
+    scale(profileImage.width/mask.width*.5);
+
+    image(profileImage, 0, 0);
+    popMatrix();
+    fill(backgroundColor);
+    noStroke();
+    scale(.7);
+    shape(mask, 0, 0);
+    popMatrix();
   }
 }
 
@@ -136,7 +152,7 @@ class Pilot {
     shape(app, 0, 0);
     //if (rotating) rotate(millis()/1000.0);
     shape(icon, 0, 0);
-    if (label!=null && debug && (channel == command || !android)) {     
+    if (label!=null) {// && debug && (channel == command || !android)) {     
       fill(50);
       textAlign(CENTER);
       textFont(font, android ? 20 : 20);

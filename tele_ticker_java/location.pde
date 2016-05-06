@@ -64,10 +64,6 @@ void updateLocation() {
   if (!found) {
     locations.add("We're lost...");
   } else {
-    locations.add("Entre los muchos filosofos con quienes tropece en las casas de huespedes que he recorrido mientras segui");
-    println(("Entre los muchos filosofos con quienes tropece en las casas de huespedes que he recorrido mientras segui").length());
-    //locations.add("Entre los muchos filosofos con quienes tropece en las casas de huespedes que he recorrido mientras segui la carrera de Ciencias, ninguno mas enamorado de la filosofia como mi amigo Amoros. Puede decirse que no vivia mas que para esta dama de sus pensamientos.");
-
     locations.add(cleanUp(getCoordinate(latitude, true)+" "+getCoordinate(longitude, false), true));
     locations.add(cleanUp(houseNumber+" "+street, true));
     locations.add(cleanUp(neighbourhood+" "+postCode, true));

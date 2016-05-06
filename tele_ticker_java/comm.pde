@@ -54,6 +54,9 @@ void writeString(String thisString, int thisMode, int tick, int tock, int tuck) 
     tx(data);
   }
   alpha.printString(thisString, thisMode, tick, tock, tuck);
+  if (dweet) {
+    sendDweetQuietly("content", thisString+"|"+thisMode+"|"+tick+"|"+tock+"|"+tuck);
+  }
   if (debug) {
     //println(thisMode+"   "+tick+"   "+tock+"   "+tuck+"   "+packetOut+" "+thisString);
   }

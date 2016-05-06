@@ -16,16 +16,22 @@ int pingTime;
 String[] loadUrl(String thisUrl) {
   loading = true;
   //writeString("", LOADING, 1, 1, 1);
-  println(thisUrl);
-  if (!wifi) updateWifi();
+  println(thisUrl);  
   long pingStart = millis();
-  if (wifi) {
-    String[] content = loadStrings(thisUrl);
-    if (content != null) {
-      pingTime = int(millis() - pingStart);
-      online = true;
-      println("ok "+pingTime+"ms");
-      return content;
+  if (wifi && online) {
+    try { 
+      String[] content = loadStrings(thisUrl);
+      if (content != null) {
+        pingTime = int(millis() - pingStart);
+        //online = true;
+        println("ok "+pingTime+"ms");
+        return content;
+      }
+    } 
+    catch (Exception e) {
+      println(e);
+      //online = false;
+      onlines.add("EXCEPTION THROWN");
     }
   }
   println("error");
@@ -43,18 +49,18 @@ void updateOnline() {
   try { 
     String[] ip = loadUrl(ipFinderUrl);
     if (ip != null) {
-      online = true;
+      //online = true;
       pingTime = int(millis() - pingStart);
       externalIP = ip[0];
       onlines.add(cleanUp("IP "+ip[0]+" PING "+pingTime+"ms"));
     } else {
       onlines.add("CAN'T CONNECT TO WWW");
-      online = false;
+      //online = false;
     }
   } 
   catch (Exception e) {
     println(e);
-    online = false;
+    //online = false;
     onlines.add("EXCEPTION THROWN");
   }
 }
@@ -75,12 +81,12 @@ void updateWifi() {
       hostName = addr.getHostName();
       hostIP = "OFFLINE";
       wifis.add(cleanUp(hostName+" IS OFFLINE", true));
-      wifi = false;
+      //wifi = false;
       online = false;
     } else {
       hostName = addr.getHostName();
       wifis.add(cleanUp(hostName+"@"+hostIP, true));
-      wifi = true;
+      //wifi = true;
     }
   } 
   catch (UnknownHostException e) {
