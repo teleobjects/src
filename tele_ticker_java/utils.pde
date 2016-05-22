@@ -1,3 +1,11 @@
+String concatenate(String[] content) {
+  String result="";
+  for(int i=0; i<content.length;i++){
+    result += content[i];
+  }
+  return result;
+}
+
 int countChar(String str, char c){
   if (str.length() == 0 || str == null) return 0;
   int count = 0;
@@ -26,7 +34,7 @@ String removeQuotes(String str) {
   if (str.length() > 0) {
 
     if (str.charAt(str.length()-1) == DOUBLE_QUOTE) {
-      str = str.substring(0, str.length()-2);
+      str = str.substring(0, str.length()-1);
     }
   }
   return str;
@@ -45,8 +53,6 @@ String removeSpaces(String str) {
   }
   return str;
 }
-
-
 
 String removeBrackets(String str) {
   if (str.length() > 0) {
@@ -72,6 +78,13 @@ String encode(String name) {
   return encoded;
 }
 
+String getHeading(float deg) {
+  String[] directions = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", 
+  "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
+  int i = int((deg + 11.25)/22.5);
+  return directions[i % 16];
+}
+
 String getCoordinate(double coordinate, boolean isLat) {
   char hemisphere = coordinate < 0 ? (isLat ? 'S' : 'W') : (isLat ? 'N' : 'E');
   float coord = (float)coordinate; 
@@ -81,7 +94,7 @@ String getCoordinate(double coordinate, boolean isLat) {
   int minutes = int(minutesFromRemainder);      
   float secondsFromRemainder = ( minutesFromRemainder - minutes ) * 60;  
   int seconds = int( secondsFromRemainder);
-  return (degrees+""+DEGREE + nf(minutes, 2, 0) + SINGLE_QUOTE + nf(seconds, 2, 0) +DOUBLE_QUOTE +""+hemisphere);
+  return (degrees+""+ DEGREE + nf(minutes, 2, 0) + SINGLE_QUOTE + nf(seconds, 2, 0) + DOUBLE_QUOTE +""+hemisphere);
 }
 
 float getCelcius(float temp) {
@@ -89,7 +102,6 @@ float getCelcius(float temp) {
   temp /= 1.8;
   return temp;
 }
-
 
 String getStringTime(boolean am_pm) {
   String result = "";

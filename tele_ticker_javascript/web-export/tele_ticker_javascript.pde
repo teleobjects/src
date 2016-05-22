@@ -1,48 +1,47 @@
-int  tick, tock, tuck;
-float rot, targetRot;
-PShape outline, outline_mask, app, mask;
-
-//boolean newDweet = false;
-
-Alpha alpha;
-float s = 1;
+Ticker ticker;
+Frame frame;
+//PImage test;
 
 void setup() {
   setSize();
-  app = loadShape("shp/app.svg");
-  app.disableStyle();
-  outline = loadShape("shp/ticker.svg");
-  outline.disableStyle();
-  outline_mask = loadShape("shp/ticker_mask.svg");
-  outline_mask.disableStyle();
-  mask = loadShape("shp/mask.svg");
-  mask.disableStyle();
-  alpha = new Alpha();
-  alpha.printString("WHAT'S UP?", TICKER, 5, 1, 1);
+  ticker = new Ticker();
+  ticker.printString("WHAT'S UP?", TICKER, 5, 1, 1);
+
+  frame = new Frame();
   listenDweet("teleobject");
 }
 
 void draw() {
   background(backgroundColor);
+  //size(12000,600);
   //fill(redColor);
   //text(thing, 100, 100);
   //text(content, 100, 130);
   //text(created, 100, 160);
+
+  //if (test != null) {
+  //  pushMatrix();
+  //  scale(.5);
+  //  image(test, 50, 50);
+  //  popMatrix();
+  //}
   translate(width/2, height/2);
-  scale(s);
-  strokeWeight(2.5);
-  stroke(50);
-  fill(255);
-  shape(outline, 0, 0);
-  fill(backgroundColor);
-  shape(outline_mask, 0, 0);
-  alpha.display();
+  //scale(s);
+
+  ticker.display();
+
+  translate(300, -300);
+  frame.display();
 }
 
 void newDweet() {
   String[] items = splitTokens(content, "|");
-  alpha.printString(items[0],parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
-  //println(items[1]);
+
+
+  ticker.printString(items[0], parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
+  frame.printString(items[0], parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
+
+  //println(items[0]);
 }
 
 void setSize()
@@ -56,30 +55,96 @@ void setSize()
 }
 
 void mousePressed() {
-  //String thing = "teleobject";
-  //String url = "https://thingspace.io/get/latest/dweet/for/"+thing;
-  //println("getting dweet");
+  String thing = "teleobject";
+  String url = "https://thingspace.io/get/latest/dweet/for/"+thing;
+  test = loadImage("https://static01.nyt.com/images/2016/05/12/us/politics/00trumpwomen-top-copy/00trumpwomen-top-square320.jpg");
+
   if (mouseX <  width/2) {
-    getDweet("teleobject");
+    //getDweet("teleobject");
     //println(result);
     //println(content);
   } else {
-    
+
     //sendDweet("teleobject", millis());
   }
 }
 
-//interface JavaScript
-//{
-//  void getDweet();
-//  void sendDweet();
-//}
 
-//JavaScript javascript = null;
 
-//void setJavaScript(JavaScript js) { 
-//  javascript = js;
-//}
+
+class Frame {
+  PShape frame, app;
+  PImage img;
+
+  //PGraphics canvas;
+
+
+  Frame() {
+    //canvas = createGraphics(240, 240);
+
+    //canvas.beginDraw();
+    //canvas.background(redColor);
+    //canvas.endDraw();
+
+    app = loadShape("shp/app.svg");
+    app.disableStyle();
+
+    mask = loadShape("shp/mask.svg");
+    mask.disableStyle();
+  }
+
+  void display() {
+
+    strokeWeight(2.5);
+    stroke(50);
+    fill(255);
+    pushMatrix();
+    scale(2.5);
+    strokeWeight(2.5/2.5);
+
+    shape(app, 0, 0);
+    popMatrix();
+
+    pushMatrix();
+    //image(canvas, 0, 0);
+
+    if (img != null) {
+      imageMode(CENTER);
+
+      scale(240.0/img.width*.46);
+
+      image(img, 0, 0);
+    }
+    popMatrix();
+
+    fill(255);
+    noStroke();
+    shape(mask, 0, 0);
+
+    stroke(0);
+    strokeWeight(2.5);
+    noFill();
+    shape(app, 0, 0);
+  }
+
+  void printString(String thisString, int thisMode, int thisTick, int thisTock, int thisTuck) {
+    if (thisMode == IMAGE) {
+      println("loading "+thisString);
+      img = loadImage(thisString);
+      //canvas.beginDraw();
+      //canvas.scale(img.width/240.0);
+      ////canvas.scale(2);
+      //canvas.background(255);
+      //canvas.fill(redColor);
+      //canvas.text(thisString, 10, 120);
+      //canvas.imageMode(CORNER);
+
+      //canvas.image(img,0,0);
+      //canvas.endDraw();
+    }
+  }
+}
+
 final int CHARS = 32;
 
 char DEC_POINT = 47;
@@ -122,6 +187,7 @@ final int RAIN = 23;
 final int SNOW = 24;
 
 final int DWEET_TX = 100;
+final int IMAGE = 101;
 
 color whiteColor = color (255, 255, 255);
 color redColor = color(190, 30, 45);
@@ -130,7 +196,14 @@ color backgroundColor = color(200);
 final int BLE_PACKET_LENGHT=18;
 final int TX_SPEED = 150;
 
-class Alpha {
+class Ticker {
+
+  int  tick, tock, tuck;
+
+
+  PShape outline, outline_mask, app, mask;
+  float rot, targetRot;
+
   PShape segments[];
   String segmentNames[] = {"DP", "N", "M", "L", "K", "J", "H", "G2", "G1", "F", "E", "D", "C", "B", "A"};
   String alphaFont[];
@@ -149,7 +222,14 @@ class Alpha {
   long nextZ;
   long awakeStart;
 
-  Alpha() {
+  Ticker() {
+
+    outline = loadShape("shp/ticker.svg");
+    outline.disableStyle();
+    outline_mask = loadShape("shp/ticker_mask.svg");
+    outline_mask.disableStyle();
+
+
     dis = new char[CHARS];
     dec = new boolean[CHARS];
     segments = new PShape[15];
@@ -303,6 +383,14 @@ class Alpha {
 
   void display() {
     update();
+
+    strokeWeight(2.5);
+    stroke(50);
+    fill(255);
+    shape(outline, 0, 0);
+    fill(backgroundColor);
+    shape(outline_mask, 0, 0);
+
     fill(redColor);
     noStroke();
     float currentX = -546;
@@ -374,7 +462,7 @@ class Alpha {
 
     case CENTERED:
       clearDisplay();
-      cursorX = (CHARS - data.length() +  countChar(data, '.')) / 2;
+      cursorX = int((CHARS - data.length())/2);// +  countChar(data, '.')) / 2;
       while (data.length() > 0 && cursorX < CHARS) {
         dis[cursorX] = data.charAt(0);
         data = data.substring(1, data.length());
@@ -528,6 +616,7 @@ String cleanUp(String str) {
   }
   return res;
 }
+
 int countChar(String str, char c){
   if (str.length() == 0 || str == null) return 0;
   int count = 0;

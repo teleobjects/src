@@ -1,48 +1,47 @@
-int  tick, tock, tuck;
-float rot, targetRot;
-PShape outline, outline_mask, app, mask;
-
-//boolean newDweet = false;
-
-Alpha alpha;
-float s = 1;
+Ticker ticker;
+Frame frame;
+//PImage test;
 
 void setup() {
   setSize();
-  app = loadShape("shp/app.svg");
-  app.disableStyle();
-  outline = loadShape("shp/ticker.svg");
-  outline.disableStyle();
-  outline_mask = loadShape("shp/ticker_mask.svg");
-  outline_mask.disableStyle();
-  mask = loadShape("shp/mask.svg");
-  mask.disableStyle();
-  alpha = new Alpha();
-  alpha.printString("WHAT'S UP?", TICKER, 5, 1, 1);
+  ticker = new Ticker();
+  ticker.printString("WHAT'S UP?", TICKER, 5, 1, 1);
+
+  frame = new Frame();
   listenDweet("teleobject");
 }
 
 void draw() {
   background(backgroundColor);
+  //size(12000,600);
   //fill(redColor);
   //text(thing, 100, 100);
   //text(content, 100, 130);
   //text(created, 100, 160);
+
+  //if (test != null) {
+  //  pushMatrix();
+  //  scale(.5);
+  //  image(test, 50, 50);
+  //  popMatrix();
+  //}
   translate(width/2, height/2);
-  scale(s);
-  strokeWeight(2.5);
-  stroke(50);
-  fill(255);
-  shape(outline, 0, 0);
-  fill(backgroundColor);
-  shape(outline_mask, 0, 0);
-  alpha.display();
+  //scale(s);
+
+  ticker.display();
+
+  translate(300, -300);
+  frame.display();
 }
 
 void newDweet() {
   String[] items = splitTokens(content, "|");
-  alpha.printString(items[0],parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
-  //println(items[1]);
+
+
+  ticker.printString(items[0], parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
+  frame.printString(items[0], parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
+
+  //println(items[0]);
 }
 
 void setSize()
@@ -56,27 +55,16 @@ void setSize()
 }
 
 void mousePressed() {
-  //String thing = "teleobject";
-  //String url = "https://thingspace.io/get/latest/dweet/for/"+thing;
-  //println("getting dweet");
+  String thing = "teleobject";
+  String url = "https://thingspace.io/get/latest/dweet/for/"+thing;
+  test = loadImage("https://static01.nyt.com/images/2016/05/12/us/politics/00trumpwomen-top-copy/00trumpwomen-top-square320.jpg");
+
   if (mouseX <  width/2) {
-    getDweet("teleobject");
+    //getDweet("teleobject");
     //println(result);
     //println(content);
   } else {
-    
+
     //sendDweet("teleobject", millis());
   }
 }
-
-//interface JavaScript
-//{
-//  void getDweet();
-//  void sendDweet();
-//}
-
-//JavaScript javascript = null;
-
-//void setJavaScript(JavaScript js) { 
-//  javascript = js;
-//}

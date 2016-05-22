@@ -16,9 +16,42 @@
 		background: #ccc;
 	}
 	</style>     
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+
 	<script type="text/javascript">
 	function resizeCanvas() {
-		Processing.getInstanceById("teleobjects").setSize();
+		// Processing.getInstanceById("teleobjects").setSize();
+	}
+
+	var byteArrayImage;
+
+	function getByteArrayImage() {
+		var photoUrl = "https://www.google.com/m8/feeds/photos/media/teleobjects%40gmail.com/6948bfa48b02bd6b?access_token=ya29.CjLmAnv3O7AIN1g9_Y9oMlG38RNwpJDhxJsoqUgE9WvY_czMxpVAz_dQD6c7CGi4MpvTHg";
+		alert(photoUrl);
+
+		$.ajax({
+			type: 'POST',
+			// contentType: 'application/json; charset=utf-8',
+			// dataType: 'jsonp',
+			jsonp: false,
+			crossDomain: true,
+			// timeout: 10000,
+			url: encodeURI(photoUrl),
+			success: function (data) {
+				if (data.d != null) {
+					var results = jQuery.parseJSON(data.d);
+						alert(results);
+
+					for (var key in results) {
+						document.getElementById("preview").src = "data:image/png;base64," + results[key];
+					}
+				}
+				// Processing.getInstanceById("teleobjects").addImage(img);
+			}
+		// }
+	});
+
+
 	}
 
 	var thing, content, created;
@@ -66,12 +99,15 @@
 	<script src="//dweet.io/client/dweet.io.min.js"></script>
 	@@scripts@@
 </head>
-<body onresize="resizeCanvas();">
+<body onresize="getByteArrayImage();">
 	<div id="content">
 		<div>
+			<img id="preview" src="img/4421325317.png">
+		</div>
+<!-- 		<div>
 			<canvas id="teleobjects" data-processing-sources="tele_ticker_javascript.pde">
 			</canvas>
-		</div>
+		</div> -->
 	</div>
 </body>
 </html>

@@ -1,7 +1,7 @@
 final int CHARS = 32;
 
 char DEC_POINT = 47;
-char DEGREE = '°';
+char DEGREE = 29;
 char SINGLE_QUOTE = 5;
 char DOUBLE_QUOTE = 34;
 char DECIMAL_POINT = 14;
@@ -29,7 +29,7 @@ final int SLEEP = 12;
 final int AIRPORT = 13;
 final int BLINK = 14;
 final int LOADING = 15;
-
+final int COMPASS = 16;
 final int BATTERY = 17;
 final int AXIS = 18;
 final int ALPHABET = 19;
@@ -40,12 +40,7 @@ final int RAIN = 23;
 final int SNOW = 24;
 
 final int DWEET_TX = 100;
-
-Alpha alpha;
-
-void initDisplay() {
-  alpha = new Alpha();
-}
+final int IMAGE = 101;
 
 class Alpha {
   PShape segments[];
@@ -80,7 +75,7 @@ class Alpha {
 
   void update() {
     switch(mode) {
-    case LOOK:
+      case LOOK:
       clearDisplay();
       int eyesX = 0;
       boolean eyesB = millis() % 1200 < 300;
@@ -90,19 +85,19 @@ class Alpha {
       dis[eyesX + 1] = !eyesB ?  char(rightEyes[face]) : char(rightEyes[faceClosed]) ;
       dec[eyesX] = true;
       break;
-    case SLEEP:
+      case SLEEP:
       clearDisplay();
       switch (zzz) {
-      case 0:
+        case 0:
         break;
-      case 1:
+        case 1:
         dis[0] = 'z';
         break;
-      case 2:
+        case 2:
         dis[0] = 'z';
         dis[1] = 'z';
         break;
-      case 3 :
+        case 3 :
         dis[0] = 'z';
         dis[1] = 'z';
         dis[2] = 'z';
@@ -122,8 +117,8 @@ class Alpha {
       }
       break;
 
-    case SCROLL:
-      if (millis() > lastTick + tick*2) {
+      case SCROLL:
+      if (millis() > lastTick + tick*1) {
         lastTick = millis();
         if (cursorX < breakX ) {    /// scroll right
           cursorX ++;
@@ -174,8 +169,8 @@ class Alpha {
       }
       break;
 
-    case TICKER:      
-      if (millis() - lastTick > tick*1.5) {
+      case TICKER:      
+      if (millis() - lastTick > tick*1.35) {
         lastTick = millis();
         if (data.length() > 0) {
           if (breakX == 0) {
@@ -186,7 +181,9 @@ class Alpha {
             if (breakX > CHARS) breakX = CHARS;
             if (data.charAt(0) == ' ' && data.length() > 1) data = data.substring(1, data.length());
           }
-          dis[cursorX] = data.charAt(0);
+          if (cursorX < CHARS) { ///// to fix bug ????
+            dis[cursorX] = data.charAt(0);
+          }
           data = data.substring(1, data.length());
           if (data.length() > 0) {
             if (data.charAt(0) == '.' && dis[cursorX] != '.') {
@@ -222,8 +219,7 @@ class Alpha {
     fill(redColor);
     noStroke();
     float currentX = -546;
-    for (int i=0; i< CHARS; i++) {
-      char current = dis[i];
+    for (int i=0; i < CHARS; i++) {
       pushMatrix();
       translate(currentX, 36);
       scale(.16);
@@ -241,22 +237,22 @@ class Alpha {
     tock = thisTock;
     tuck = thisTuck;
     busy = false;
-    int txDelay = int(thisString.length()/BLE_PACKET_LENGHT*TX_SPEED*1.2);
+
     lastTick = millis() + txDelay;
 
     switch (mode) {
-    case DWEET_TX:
+      case DWEET_TX:
       String[] items = splitTokens(thisString, "|");
-      if (dweet) {
-        sendDweet(items[0], thisString.substring(thisString.indexOf("|"), thisString.length()));
-      }
+      //if (dweet) {
+      messaging.sendDweet(items[0], thisString.substring(thisString.indexOf("|"), thisString.length()));
+      //}
       break;
 
-    case BLANK:
+      case BLANK:
       clearDisplay();
       break;
 
-    case INSTANT:
+      case INSTANT:
       clearDisplay();
       while (data.length() > 0 && cursorX < CHARS) {
         dis[cursorX] = data.charAt(0);
@@ -271,7 +267,7 @@ class Alpha {
       }
       break;
 
-    case STREAM:
+      case STREAM:
       if (data.length() == CHARS) {
         // dis = data;
         for (int i=0; i<CHARS; i++) {
@@ -280,7 +276,7 @@ class Alpha {
       }
       break;
 
-    case CENTERED:
+      case CENTERED:
       clearDisplay();
       cursorX = (CHARS - data.length() +  countChar(data, '.')) / 2;
       while (data.length() > 0 && cursorX < CHARS) {
@@ -296,19 +292,19 @@ class Alpha {
       }
       break;
 
-    case TICKER:
+      case TICKER:
       breakX = 0;
       busy = true;
       break;
 
-    case SCROLL_ALL_RIGHT:
+      case SCROLL_ALL_RIGHT:
       cursorX = 0;
       breakX = CHARS + data.length();
       mode = SCROLL;
       busy = true;
       break;
 
-    case SCROLL_CENTER_RIGHT:
+      case SCROLL_CENTER_RIGHT:
       cursorX = 0;
       breakX = ((CHARS - data.length()) / 2) + data.length();
       mode = SCROLL;
@@ -316,7 +312,7 @@ class Alpha {
 
       break;
 
-    case SCROLL_PUSH_RIGHT:
+      case SCROLL_PUSH_RIGHT:
       cursorX = 0;
       int lastX = CHARS+1;
       for (int i=CHARS-1; i>=0; i--) {
@@ -339,21 +335,21 @@ class Alpha {
       busy = true;
       break;
 
-    case SCROLL_ALL_LEFT:
+      case SCROLL_ALL_LEFT:
       cursorX = 0;
       breakX = -CHARS - data.length();
       mode = SCROLL;
       busy = true;
       break;
 
-    case SCROLL_CENTER_LEFT:
+      case SCROLL_CENTER_LEFT:
       cursorX = 0;
       breakX = -((CHARS - data.length()) / 2) - data.length();
       mode = SCROLL;
       busy = true;
       break;
 
-    case SCROLL_PUSH_LEFT:
+      case SCROLL_PUSH_LEFT:
       cursorX = 0;
       int firstX = 0;
       for (int i=0; i<CHARS; i++) {
@@ -377,7 +373,7 @@ class Alpha {
       busy = true;
       break;
 
-    case AIRPORT:
+      case AIRPORT:
       for (int i = data.length(); i < CHARS; i++) {
         data += " ";
       }
@@ -406,8 +402,8 @@ class Alpha {
   }
 }
 
-String invalid  = "_âáäÁÂÄéêëÉÊËíîïÍÎÏóôöÓÔÖúûüÚÛÜñÑ"+char(8217);
-String subs     = " aaaAAAeeeEEEiiiIIIoooOOOuuuUUUnN'";
+String invalid  = "`´_âáäÁÂÄéêëÉÊËíîïÍÎÏóôöÓÔÖúûüÚÛÜñÑ";//+char(8217);
+String subs     = "'' 'aaAAAeeeEEEiiiIIIoooOOOuuuUUUnN";
 String valid = " !@#$%^&*()-+=[]}{;':<>,.?/01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"+DEGREE+DOUBLE_QUOTE+SINGLE_QUOTE;
 
 String cleanUp(String str, boolean capitalize) {
@@ -417,20 +413,29 @@ String cleanUp(String str, boolean capitalize) {
 }
 
 String cleanUp(String str) {
+  // boolean flag = false;
   String res = "";
   for (int i=0; i<str.length(); i++) {
     char ch = str.charAt(i);
+    if (ch == '&' && str.charAt(i+1) == '#') {
+      ch = 39;
+      i = i+6;
+      // flag = true;
+
+    }
+    if (ch > 127) {
+      ch = 39;
+
+    }
     if (invalid.indexOf(ch) != -1) {
-      if (invalid.indexOf(ch) < subs.length()) {
-        ch = subs.charAt(invalid.indexOf(ch));
-      }
+      ch = subs.charAt(invalid.indexOf(ch));
     }
     if (valid.indexOf(ch) != -1) {
       res +=  ch;
     } else {
       res += '-';
-      // println(char(ch)+" code: "+(int)ch+" not valid");
     }
   }
+  // if (flag) println(res);
   return res;
 }

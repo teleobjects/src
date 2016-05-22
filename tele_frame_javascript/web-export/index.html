@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<title>teleobjects</title>
+	<meta name="Generator" content="Processing" />
+	<style type="text/css">
+	canvas:  {  
+		margin: auto;
+		outline: none; 
+		border: none; 
+	}
+
+	html body {
+		margin: 0;
+		padding: 0;
+		background: #ccc;
+	}
+	</style>     
+	<script type="text/javascript">
+	function resizeCanvas() {
+		Processing.getInstanceById("teleobjects").setSize();
+	}
+
+	var thing, content, created;
+
+	function listenDweet(thing_) {
+		dweetio.listen_for(thing_, function(dweet){
+			thing = dweet.thing; 
+			content = dweet.content["content"]; 
+			created = dweet.created; 
+			Processing.getInstanceById("teleobjects").newDweet();
+		});
+	}
+
+	function getDweet(thing_) {
+		dweetio.get_latest_dweet_for(thing_, function(err, dweet){
+			var dweet = dweet[0]; 
+			thing = dweet.thing; 
+			content = dweet.content["content"]; 
+			created = dweet.created; 
+		});
+	}
+
+	function sendDweet(thing_, content_) {
+		dweetio.dweet_for(thing, {content:content_}, function(err, dweet){
+		});
+	}
+
+	function stopListening(thing_) {
+		dweetio.stop_listening_for(thing_);
+	}
+
+	function getAllDweets(thing_) {
+		dweetio.get_all_dweets_for("my-thing", function(err, dweets){
+			for(theDweet in dweets)
+			{
+				var dweet = dweets[theDweet];
+				console.log(dweet.thing)
+				console.log(dweet.content);
+				console.log(dweet.created);
+			}
+		});
+	}
+	</script>
+	<script src="processing.js" type="text/javascript"></script>
+	<script src="//dweet.io/client/dweet.io.min.js"></script>
+	<script type="text/javascript">
+// convenience function to get the id attribute of generated sketch html element
+function getProcessingSketchId () { return 'teleframejavascript'; }
+</script>
+
+</head>
+<body onresize="resizeCanvas();">
+	<div id="content">
+		<div>
+			<canvas id="teleobjects" data-processing-sources="tele_ticker_javascript.pde">
+			</canvas>
+		</div>
+	</div>
+</body>
+</html>

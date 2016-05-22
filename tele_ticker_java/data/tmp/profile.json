@@ -1,0 +1,39 @@
+{
+  "ageRange": {"min": 21},
+  "image": {
+    "isDefault": false,
+    "url": "https://lh6.googleusercontent.com/-kS-6J-nmCGo/AAAAAAAAAAI/AAAAAAAAAEA/soeu0VkR0YU/photo.jpg?sz=50"
+  },
+  "kind": "plus#person",
+  "displayName": "Tele Objects",
+  "verified": false,
+  "language": "en_GB",
+  "url": "https://plus.google.com/101439171467929724785",
+  "objectType": "person",
+  "isPlusUser": true,
+  "emails": [{
+    "type": "account",
+    "value": "teleobjects@gmail.com"
+  }],
+  "cover": {
+    "layout": "banner",
+    "coverPhoto": {
+      "width": 940,
+      "url": "https://lh3.googleusercontent.com/UG3v3hiZnMshP2wFjLbER46wPsbctyYYK1Ar25lTm9jbZ_qHJZn5xfOsPDiEjWDY1IvdHsU=s630-fcrop64=1,00000000ffffffff",
+      "height": 525
+    },
+    "coverInfo": {
+      "topImageOffset": 0,
+      "leftImageOffset": 0
+    }
+  },
+  "nickname": "teleobjects",
+  "name": {
+    "familyName": "Objects",
+    "givenName": "Tele"
+  },
+  "tagline": "1 app + 1 object = 1 teleobject",
+  "etag": "\"9RfJHQrviqM_fwiLNk11QGzyCj0/7KWoTlAS5yPAJTwWpoZEArjUqpg\"",
+  "id": "101439171467929724785",
+  "circledByCount": 0
+}

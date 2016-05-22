@@ -1,89 +1,108 @@
-boolean dweet, usb, bluetooth, wifi, paired, connecting, connected, ready, online, located, found, forecasted, placed, loggedin, loading, logging, logged, metric = true;
-boolean refresh = true;
-boolean play = true;
-boolean direction;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Calendar;
 
-int channel = -1;
+import com.temboo.core.*;
+import com.temboo.Library.Google.Spreadsheets.*;
+import com.temboo.Library.Google.OAuth.*;
+import com.temboo.Library.Google.Contacts.*;
+import com.temboo.Library.Utilities.XML.*;
+import com.temboo.Library.Utilities.JSON.*;
+import com.temboo.Library.Google.Calendar.*;
+import com.temboo.Library.Google.Plus.People.*;
+import com.temboo.Library.Twitter.OAuth.*;
+import com.temboo.Library.Twitter.Trends.*;
+import com.temboo.Library.Twitter.Users.*;
+import com.temboo.Library.Twitter.FriendsAndFollowers.*;
 
-PImage profileImage = null;
+TembooSession session = new TembooSession("teleobjects", "teleobjects", "d1YKYX3a5Y6V1LAyYebWzB1RczFVkwrN");
 
-ArrayList<String> pages;
-int pageIndex = 0;
-int lastPageIndex;
-long lastPage;
-boolean initPage;
 
 boolean debug = false;
 boolean verbose = true;
-boolean android = true;
+boolean metric = true;
+
+boolean forceoffline = false;
+boolean forcelogin = false;
+
+boolean sync = true;
+
+boolean android = false;
+
+Time time;
+Alpha alpha;
+Gui gui;
+Eq eq;
+Google google;
+Profile profile;
+Geolocation geolocation;
+GoogleContacts contacts;
+GoogleCalendar calendar;
+GoogleDrive drive;
+
+Places places;
+Mail mail;
+Weather weather;
+News news;
+Twitter twitter;
+Messaging messaging;
 
 void setup() {
-  //println(PFont.list());
-  //size(1600, 900);
-  if (android) {
-    //fullScreen();
-    bluetooth = true;
-    orientation(LANDSCAPE);
-  }
-  //
-  rectMode(CENTER);
-  imageMode(CENTER);
-  //smooth();
-  //frameRate(24);
-  initTime();
-  initComm();
-  initGui();
-  initPilots();
-  initDisplay();
-  //initWifi();
-  //initOnline();
-  initThing();
-  initLocation();
-  initPlaces();
-  initContacts();
-  //initMail();
-  //initTwitter();
-  //initNews();
-  initMic();
-  pages = new ArrayList();
-  pages.add("");
-}
+  size(1600, 900);
+  orientation(LANDSCAPE);
 
+  time = new Time();
+  places = new Places();
+  profile = new Profile();
+  google = new Google();
+  news = new News();
+  twitter = new Twitter();
+  contacts = new GoogleContacts();
+  calendar = new GoogleCalendar();
+  drive = new GoogleDrive();
+  geolocation = new Geolocation();
+  eq = new Eq(this);
+  weather = new Weather();
+  mail = new Mail();
+  messaging = new Messaging();
+
+  alpha = new Alpha();
+  gui = new Gui();
+  gui.init();
+  initComm();
+}
 
 void draw() {
 
-  
-  updateComm();
-
-  if (android) {
-    if (location == null) {
-      try {
-        location = new KetaiLocation(this);
-        location. setUpdateRate(1000, 1);
-      } 
-      catch (Exception e) {
-        println("error");
+  if (google.authenticating || twitter.authenticating) {
+    background(redColor);
+    if (gui.clicked) {
+      gui.clicked = false;
+      if (google.authenticating) {
+        google.login();
+      } else if (twitter.authenticating) {
+        twitter.login();
       }
     }
-  }
-  
-  
-  /// OSX
-  if (!android) {
-    //if (connecting);// && millis() - startTime > 1000) {
-    //  connectimh
-    //  connected = true;
-    //}
-    if (connected) {
-      rx();
+  } else {
+
+    if (connected && connecting && google.loggedin) {
+      connecting = false;
+      writeString("", INSTANT, 1, 1, 1);
+      writeString(cleanUp("Hi "+profile.givenName+"!", false), TICKER, 10, 1, 1);
+      gui.refresh = true;
     }
+    if (channel == EQ || channel == AXIS) gui.refresh = true;
+    if (!connected) busy = alpha.busy;     /// simulator
+
+    updateComm();
+
+    time.update();
+    geolocation.update();
+    weather.update();
+    eq.update();
+    gui.update();
+    // println("play");
+    play();
   }
-
-  if (!connected) busy = alpha.busy; /// simulator
-
-  if (channel == EQ || channel == AXIS) refresh = true;
-  displayGui();
-  updateMic();
-  refresh = false;
-  play();
 }

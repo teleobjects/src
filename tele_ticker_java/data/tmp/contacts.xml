@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:batch="http://schemas.google.com/gdata/batch" xmlns:gContact="http://schemas.google.com/contact/2008" xmlns:gd="http://schemas.google.com/g/2005" xmlns:openSearch="http://a9.com/-/spec/opensearch/1.1/" gd:etag="&quot;Qn0zcTVSLyt7I2A9XRBQFkwIQAE.&quot;">
+  <id>teleobjects@gmail.com</id>
+  <updated>2016-05-18T23:05:53.389Z</updated>
+  <category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/contact/2008#contact"/>
+  <title>Tele Objects's Contacts</title>
+  <link href="https://www.google.com/" rel="alternate" type="text/html"/>
+  <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full" rel="http://schemas.google.com/g/2005#feed" type="application/atom+xml"/>
+  <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full" rel="http://schemas.google.com/g/2005#post" type="application/atom+xml"/>
+  <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/batch" rel="http://schemas.google.com/g/2005#batch" type="application/atom+xml"/>
+  <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full?max-results=5000" rel="self" type="application/atom+xml"/>
+  <author>
+    <name>Tele Objects</name>
+    <email>teleobjects@gmail.com</email>
+  </author>
+  <generator uri="http://www.google.com/m8/feeds" version="1.0">Contacts</generator>
+  <openSearch:totalResults>4</openSearch:totalResults>
+  <openSearch:startIndex>1</openSearch:startIndex>
+  <openSearch:itemsPerPage>5000</openSearch:itemsPerPage>
+  <entry gd:etag="&quot;QX4_fjVSLit7I2A9XRNWGEUCRAY.&quot;">
+    <id>http://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/base/6e5218a8c32db23</id>
+    <updated>2016-02-19T13:25:20.046Z</updated>
+    <app:edited xmlns:app="http://www.w3.org/2007/app">2016-02-19T13:25:20.046Z</app:edited>
+    <category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/contact/2008#contact"/>
+    <title/>
+    <link href="https://www.google.com/m8/feeds/photos/media/teleobjects%40gmail.com/6e5218a8c32db23" rel="http://schemas.google.com/contacts/2008/rel#photo" type="image/*"/>
+    <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/6e5218a8c32db23" rel="self" type="application/atom+xml"/>
+    <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/6e5218a8c32db23" rel="edit" type="application/atom+xml"/>
+    <gd:email address="teleobjects@googlegroups.com" rel="http://schemas.google.com/g/2005#other"/>
+  </entry>
+  <entry gd:etag="&quot;QXY4cDVSLit7I2A9XRNWEE4KTwA.&quot;">
+    <id>http://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/base/5cd37bb68afca692</id>
+    <updated>2016-02-09T15:14:00.838Z</updated>
+    <app:edited xmlns:app="http://www.w3.org/2007/app">2016-02-09T15:14:00.838Z</app:edited>
+    <category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/contact/2008#contact"/>
+    <title/>
+    <link href="https://www.google.com/m8/feeds/photos/media/teleobjects%40gmail.com/5cd37bb68afca692" rel="http://schemas.google.com/contacts/2008/rel#photo" type="image/*"/>
+    <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/5cd37bb68afca692" rel="self" type="application/atom+xml"/>
+    <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/5cd37bb68afca692" rel="edit" type="application/atom+xml"/>
+    <gd:email address="adler.merveille@verizon.com" rel="http://schemas.google.com/g/2005#other"/>
+  </entry>
+  <entry gd:etag="&quot;RXY4eDVSLSt7I2A9XRNWEE4KTgY.&quot;">
+    <id>http://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/base/6948bfa48b02bd6b</id>
+    <updated>2016-02-09T15:15:24.830Z</updated>
+    <app:edited xmlns:app="http://www.w3.org/2007/app">2016-02-09T15:15:24.830Z</app:edited>
+    <category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/contact/2008#contact"/>
+    <title/>
+    <link gd:etag="&quot;cSwgImoqWit7I2BCXmMZTThMNVoId28xbg8.&quot;" href="https://www.google.com/m8/feeds/photos/media/teleobjects%40gmail.com/6948bfa48b02bd6b" rel="http://schemas.google.com/contacts/2008/rel#photo" type="image/*"/>
+    <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/6948bfa48b02bd6b" rel="self" type="application/atom+xml"/>
+    <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/6948bfa48b02bd6b" rel="edit" type="application/atom+xml"/>
+    <gd:email address="amerveille@gmail.com" rel="http://schemas.google.com/g/2005#other"/>
+  </entry>
+  <entry gd:etag="&quot;SHs4fDVSLyt7I2A9XRNXFkUCRgc.&quot;">
+    <id>http://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/base/7cb86c760b1fc99a</id>
+    <updated>2016-02-05T16:02:19.534Z</updated>
+    <app:edited xmlns:app="http://www.w3.org/2007/app">2016-02-05T16:02:19.534Z</app:edited>
+    <category scheme="http://schemas.google.com/g/2005#kind" term="http://schemas.google.com/contact/2008#contact"/>
+    <title>Hello World!</title>
+    <link gd:etag="&quot;eR4uFH0afCt7I2BgAVELYTl8Q1ozOlo-XC8.&quot;" href="https://www.google.com/m8/feeds/photos/media/teleobjects%40gmail.com/7cb86c760b1fc99a" rel="http://schemas.google.com/contacts/2008/rel#photo" type="image/*"/>
+    <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/7cb86c760b1fc99a" rel="self" type="application/atom+xml"/>
+    <link href="https://www.google.com/m8/feeds/contacts/teleobjects%40gmail.com/full/7cb86c760b1fc99a" rel="edit" type="application/atom+xml"/>
+    <gd:name>
+      <gd:fullName>Hello World!</gd:fullName>
+      <gd:givenName yomi="Tele">Hello</gd:givenName>
+      <gd:familyName yomi="Object">World!</gd:familyName>
+    </gd:name>
+    <gContact:groupMembershipInfo deleted="false" href="http://www.google.com/m8/feeds/groups/teleobjects%40gmail.com/base/6"/>
+  </entry>
+</feed>

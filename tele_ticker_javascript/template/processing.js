@@ -841,6 +841,7 @@ module.exports = function finalizeProcessing(Processing, options) {
             };
           }(this));
           this.pending++;
+          img.crossOrigin = '';
           img.src = href;
         }
 
@@ -18548,7 +18549,7 @@ module.exports = function setupParser(Processing, options) {
 
       fromHTMLImageData: function(htmlImg) {
         // convert an <img> to a PImage
-        var canvasData = getCanvasData(htmlImg);
+         var canvasData = getCanvasData(htmlImg);
         try {
           var imageData = canvasData.context.getImageData(0, 0, htmlImg.width, htmlImg.height);
           this.fromImageData(imageData);

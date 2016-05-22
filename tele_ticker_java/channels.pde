@@ -18,20 +18,24 @@ final int THING = 111;
 final int DRIVE = 112;
 final int TWITTER = 113;
 final int NEWS = 114;
-
+final int CALENDAR = 115;
 final int SETTINGS = 200;
 final int REFRESH = 201;
-final int ACCOUNT = 202;
+final int PROFILE = 202;
 
 final int RESULTS = 120;
 
-
-String createString(String thisString, int thisMode, int thisTick, int thisTock, int thisTuck) {
-  return thisMode+""+TAB+""+thisTick+""+TAB+""+thisTock+""+TAB+""+thisTuck+""+TAB+""+thisString;
-}
+int channel = -1;
+ArrayList<String> pages;
+int pageIndex = 0;
+int lastPageIndex;
+long lastPage;
+boolean initPage;
+boolean play = true;
+boolean direction;
 
 void setChannel(int thisCommand) {
-  if ((thisCommand >= BATTERY && thisCommand <= SNOW) || thisCommand == SLEEP) {
+  if ((thisCommand >= COMPASS && thisCommand <= SNOW) || thisCommand == SLEEP) {
     channel = thisCommand;
     writeString("", thisCommand, 1, 1, 1);
   }
@@ -39,45 +43,36 @@ void setChannel(int thisCommand) {
   boolean flag = false;
 
   switch(thisCommand) {
-  case ACCOUNT:
-    if (!logged) {
-      if (!logging) {
-        writeString("", LOADING, 1, 1, 1);
-        initAccount();
-        logging = true;
-      } else {
-        runFinalizeOAuthChoreo();
-        logging = false;
-        logged = true;
-        writeString("logging in", TICKER, 10, 1, 1);
-      }
+
+    case PROFILE:
+    channel = thisCommand;
+    if (google.loggedin) {
+      pages = profile.getPages();
+    } else {
+      google.login();
     }
-    break;
-
-  case RESULTS:
-    play = true;
-    channel = thisCommand;
-    pages = results;
-    flag = true;
-    break;
-
-  case PLACES:
-    play = false;
-    pages = places;
     initPage = true;
-    channel = thisCommand;
+    flag = true;
     lastPageIndex = - 1;
-    break; 
+    break;
 
-  case UP:
+    case THING:
+    //dweet = !dweet;
+    break;
+
+    case PLAY:
+    play = !play;
+    break;
+
+    case UP:
     if (channel == PLACES) {
-      searchPlaces();
+      places.search();
       setChannel(RESULTS);
       flag = true;
     }
     break;
 
-  case RIGHT:
+    case RIGHT:
     busy = false;
     alpha.busy = false;
     lastPage = 0;
@@ -86,7 +81,7 @@ void setChannel(int thisCommand) {
     if (pageIndex == pages.size()) pageIndex = 0;
     break;
 
-  case LEFT:
+    case LEFT:
     busy = false;
     alpha.busy = false;
     lastPage = 0;
@@ -95,119 +90,106 @@ void setChannel(int thisCommand) {
     if (pageIndex == -1) pageIndex = pages.size()-1;
     break;
 
-  case SETTINGS:
+    case SETTINGS:
     debug = !debug;
     break;
 
-  case REFRESH:
-    showKeyboard();
-    //refresh = !refresh;
-    break;
-
-  case USB:
-    if (!android) {
-      if (!connected) {
-        usb = true;
-        beginComm();
-      } else {
-        // terminateComm();
-      }
+    case USB:
+    if (!android && !connected) {     
+      beginComm();
     }
     break;
 
-  case BLUETOOTH:
+    case BLUETOOTH:
     if (android  && !connected) {
       beginComm();
     }
-    if (!android) {
-      if (!connected) {
-        //
-        beginComm();
-      } else {
-        // terminateComm();
-      }
-    }
     break;
 
-  case TWITTER:
-    // updateTwitter();
-    // pages = tweets;
-    // channel = thisCommand;
-    // flag = true;
-    break;
-
-  case NEWS:
-    updateNews();
-    pages = news;
-    channel = thisCommand;
-    flag = true;
-    break;
-
-  case THING:
-    dweet = !dweet;
-    break;
-
-  case PLAY:
-    play = !play;
-    break;
-
-  case MAIL:
-    updateMail();
-    pages = mails;
-    channel = thisCommand;
-    flag = true;
-    break;
-
-  case CONTACTS:
-    play = false;
-    pages = contacts;
-    channel = thisCommand;
-    flag = true;
-
-    break;
-  case LOCATION:
-    updateLocation();
-    pages = locations;
-    channel = thisCommand;
-    flag = true;
-    break;
-
-  case WEATHER:
-    updateWeather();
-    pages = weathers;
-    channel = thisCommand;
-    flag = true;
-    break;
-
-  case ONLINE:
+    case ONLINE:
     updateOnline();
     pages = onlines;
     channel = thisCommand;
     flag = true;
     break;
 
-  case WIFI:
+    case WIFI:
     updateWifi();
     pages = wifis;
     channel = thisCommand;
     flag = true;
     break;
 
-  case DRIVE:
-    updateDrive();
-    pages = drives;
+    case RESULTS:
+    play = true;
+    channel = thisCommand;
+    pages = places.results;
+    flag = true;
+    break;
+
+    case PLACES:
+    play = false;
+    pages = places.getPages();
+    initPage = true;
+    channel = thisCommand;
+    lastPageIndex = - 1;
+    break; 
+
+    case TWITTER:
+    pages = twitter.getPages();
+    channel = thisCommand;
+    flag = true;
+    break;
+
+    case NEWS:
+    pages = news.getPages();
+    channel = thisCommand;
+    flag = true;
+    break;
+
+    case MAIL:
+    pages = mail.getPages();
+    channel = thisCommand;
+    flag = true;
+    break;
+
+    case CALENDAR:
+    pages = calendar.getPages();
+    channel = thisCommand;
+    flag = true;
+    break;
+
+    case CONTACTS:
+    pages = contacts.getPages();
     channel = thisCommand;
     flag = true;
 
     break;
-
-  case TIME:
+    case LOCATION:
+    pages = geolocation.getPages();
     channel = thisCommand;
     flag = true;
     break;
 
-  case EQ:
+    case WEATHER:
+    pages = weather.getPages();
     channel = thisCommand;
+    flag = true;
+    break;
+
+    case DRIVE:
+    pages = drive.getPages();
+    channel = thisCommand;
+    flag = true;
+    break;
+
+    case TIME:
+    channel = thisCommand;
+    flag = true;
+    break;
+
+    case EQ:
+    writeString("", BLANK, 1, 1, 1);
     break;
   }
 
@@ -218,15 +200,16 @@ void setChannel(int thisCommand) {
     lastPage = 0;
   }
 
-  refresh = true;
-  busy = false;
+  channel = thisCommand;
+  gui.refresh = true;
+  //busy = false;
 }
 
 void play() {
 
   if (channel == ONLINE || channel == WIFI || channel == LOCATION || channel == WEATHER || channel == RESULTS ||
-    channel == DRIVE || channel == MAIL || channel == TWITTER || channel == NEWS ||
-    channel == UP || channel == DOWN || channel == RIGHT || channel == LEFT) {
+    channel == DRIVE || channel == MAIL || channel == TWITTER || channel == NEWS || channel == CONTACTS ||
+    channel == UP || channel == DOWN || channel == RIGHT || channel == LEFT || channel == PROFILE || channel == CALENDAR) {
 
     //if (!busy && abs(ax) > tiltAngle) {
     //  play = false;
@@ -244,7 +227,9 @@ void play() {
     //    }
     //  }
     //}
-    if (!busy) {
+
+
+    if (!busy && pages != null && pages.size() > 0) {
       if (pageIndex != lastPageIndex) {
         if (millis() - lastPage > tuck*100) {
           lastPage = millis();
@@ -254,12 +239,15 @@ void play() {
           String thisPage = pages.get(pageIndex);
           if (thisPage.indexOf(TAB+"") != -1) {
             String[] items = splitTokens(thisPage, ""+TAB);
-            displayMode = parseInt(items[0]);
-            tick = parseInt(items[1]);
-            tock = parseInt(items[2]);
-            tuck = parseInt(items[3]);
-            if (items.length > 4) {
-              stringText = items[4];
+            if (items.length > 3) {
+              displayMode = parseInt(items[0]);
+              tick = parseInt(items[1]);
+              tock = parseInt(items[2]);
+              tuck = parseInt(items[3]);
+              if (items.length > 4) {
+                stringText = items[4];
+              }
+              writeString(stringText, displayMode, tick, tock, tuck);
             }
           } else {
             stringText = thisPage;
@@ -267,10 +255,9 @@ void play() {
             tick = 20;
             tock = 10;
             tuck = 10;
+            writeString(stringText, displayMode, tick, tock, tuck);
           }
-          writeString(stringText, displayMode, tick, tock, tuck);
           if (play) {
-            //println("play");
             pageIndex ++;
             if (pageIndex == pages.size()) {
               pageIndex = 0;
@@ -278,8 +265,6 @@ void play() {
           }
         }
       }
-    } else { 
-      //lastPage = millis();
     }
   }
 
@@ -315,60 +300,59 @@ void play() {
     }
   }
 
-  if (channel == PLACES || channel == CONTACTS && !busy) {
-    if (millis() - lastPage > 1000) {
-      if (play && channel == CONTACTS) {
-        direction = true;
-        pageIndex++;
-        if (pageIndex == pages.size()) pageIndex = 0;
-      }
-      //if (abs(ax) > tiltAngle ) {
-      //  //lastPage = millis();
-      //  if (ax > 0) {
-      //    direction = true;
-      //    pageIndex++;
-      //    if (pageIndex == pages.size()) pageIndex = 0;
-      //  } else {
-      //    direction = false;
-      //    pageIndex--;
-      //    if (pageIndex == -1) pageIndex = pages.size()-1;
-      //  }
-      //}
-      if (az > 5) {
-        //if (channel == PLACES) {
-        //  searchPlaces();
-        //  setChannel(RESULTS);
-        //}
-      } else if (pageIndex != lastPageIndex) {
-        if (!busy) {
-          lastPage = millis();
-          busy = true;
-          if (channel == CONTACTS) {  
-            if (dweet) {        
-              //sendDweet("CONTACTS", pages.get(pageIndex)+"|"+profileImages.get(pageIndex));
-            }
-          }
+  if (channel == PLACES && !busy) {
+    //if (millis() - lastPage > 1000) {
+    //  if (play && channel == CONTACTS) {
+    //    direction = true;
+    //    pageIndex++;
+    //    if (pageIndex == pages.size()) pageIndex = 0;
+    //  }
+    //  //if (abs(ax) > tiltAngle ) {
+    //  //  //lastPage = millis();
+    //  //  if (ax > 0) {
+    //  //    direction = true;
+    //  //    pageIndex++;
+    //  //    if (pageIndex == pages.size()) pageIndex = 0;
+    //  //  } else {
+    //  //    direction = false;
+    //  //    pageIndex--;
+    //  //    if (pageIndex == -1) pageIndex = pages.size()-1;
+    //  //  }
+    //  //}
+    //  if (az > 5) {
+    //    //if (channel == PLACES) {
+    //    //  searchPlaces();
+    //    //  setChannel(RESULTS);
+    //    //}
+    //  } else if (pageIndex != lastPageIndex) {
+    //    if (!busy) {
+    //      lastPage = millis();
+    //      busy = true;
+    //      if (channel == CONTACTS) {  
+    //        if (dweet) {        
+    //          //sendDweet("CONTACTS", pages.get(pageIndex)+"|"+profileImages.get(pageIndex));
+    //        }
+    //      }
+    //      writeString(cleanUp(pages.get(pageIndex), true), direction ? 
+    //        SCROLL_PUSH_RIGHT : SCROLL_PUSH_LEFT, 10, 1, 10);
+    //      lastPageIndex = pageIndex;
+    //    }
+    //  }
+    //}
+  }
 
-          writeString(cleanUp(pages.get(pageIndex), true), direction ? 
-            SCROLL_PUSH_RIGHT : SCROLL_PUSH_LEFT, 10, 1, 10);
-          lastPageIndex = pageIndex;
+  if (channel == EQ) {
+    if (!android) {
+      eq.update();
+      tuck = 1;
+      if (millis() - lastPage > tuck*100) {
+        lastPage = millis();
+        String str = "";
+        for (int i=0; i<CHARS; i++) {
+          str += eq.eqData[i];
         }
+        writeString(str, STREAM, 1, 1, 1);
       }
     }
   }
-
-  //if (channel == EQ) {
-  //  if (!android) {
-  //    updateMic();
-  //    tuck = 1;
-  //    if (millis() - lastPage > tuck*100) {
-  //      lastPage = millis();
-  //      String str = "";
-  //      for (int i=0; i<CHARS; i++) {
-  //        str += eq[i];
-  //      }
-  //      writeString(str, STREAM, 1, 1, 1);
-  //    }
-  //  }
-  //}
 }
