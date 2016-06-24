@@ -1,0 +1,83 @@
+package com.temboo.Library.Fitbit.Foods;
+
+/*
+Copyright 2014 Temboo, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+import processing.data.JSONArray;
+import processing.data.JSONObject;
+import java.math.BigDecimal;
+import com.temboo.core.Choreography.ResultSet;
+
+	
+/**
+	A ResultSet with methods tailored to the values returned by the GetLatestFood Choreo.
+	The ResultSet object is used to retrieve the results of a Choreo execution.
+*/
+public  class GetLatestFoodResultSet extends ResultSet {
+		
+	public GetLatestFoodResultSet(JSONObject doc) {
+		super(doc);
+	}
+
+	/** 
+	Retrieve the value for the "Amount" output from this Choreo execution
+
+	@return String - (decimal) The amount of food eaten.
+	*/
+	public String getAmount() {
+		return this.getResultString("Amount");
+	}
+	/** 
+	Retrieve the value for the "Calories" output from this Choreo execution
+
+	@return String - (integer) The amount of calories in this food.
+	*/
+	public String getCalories() {
+		return this.getResultString("Calories");
+	}
+	/** 
+	Retrieve the value for the "DateLastEaten" output from this Choreo execution
+
+	@return String - (date) The last date the food was logged.
+	*/
+	public String getDateLastEaten() {
+		return this.getResultString("DateLastEaten");
+	}
+	/** 
+	Retrieve the value for the "FoodID" output from this Choreo execution
+
+	@return String - (string) The ID of the food.
+	*/
+	public String getFoodID() {
+		return this.getResultString("FoodID");
+	}
+	/** 
+	Retrieve the value for the "Name" output from this Choreo execution
+
+	@return String - (string) The name of the food.
+	*/
+	public String getName() {
+		return this.getResultString("Name");
+	}
+	/** 
+	Retrieve the value for the "Response" output from this Choreo execution
+
+	@return String - The response from Fitbit.
+	*/
+	public String getResponse() {
+		return this.getResultString("Response");
+	}
+}

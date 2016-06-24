@@ -1,0 +1,7 @@
+mailapp_,440,-265,6,520,-280,12.5
+bell,settings,moon,time,battery,bluetooth
+alarms,accounts,night mode,rtc,battery,bluetooth
+never miss an important message,
+monitor all your accounts.
+it looks great on your shelf,
+or on your coffee table!

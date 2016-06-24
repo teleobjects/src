@@ -31,7 +31,7 @@ void draw() {
   ticker.display();
 
   translate(300, -300);
-  frame.display();
+  //frame.display();
 }
 
 void newDweet() {
@@ -39,7 +39,7 @@ void newDweet() {
 
 
   ticker.printString(items[0], parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
-  frame.printString(items[0], parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
+  //frame.printString(items[0], parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]));
 
   //println(items[0]);
 }
@@ -57,7 +57,7 @@ void setSize()
 void mousePressed() {
   String thing = "teleobject";
   String url = "https://thingspace.io/get/latest/dweet/for/"+thing;
-  test = loadImage("https://static01.nyt.com/images/2016/05/12/us/politics/00trumpwomen-top-copy/00trumpwomen-top-square320.jpg");
+  //test = loadImage("https://static01.nyt.com/images/2016/05/12/us/politics/00trumpwomen-top-copy/00trumpwomen-top-square320.jpg");
 
   if (mouseX <  width/2) {
     //getDweet("teleobject");
@@ -68,7 +68,6 @@ void mousePressed() {
     //sendDweet("teleobject", millis());
   }
 }
-
 
 
 
@@ -144,7 +143,6 @@ class Frame {
     }
   }
 }
-
 final int CHARS = 32;
 
 char DEC_POINT = 47;
@@ -616,7 +614,6 @@ String cleanUp(String str) {
   }
   return res;
 }
-
 int countChar(String str, char c){
   if (str.length() == 0 || str == null) return 0;
   int count = 0;

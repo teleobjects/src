@@ -1,0 +1,20 @@
+{
+  "geoplugin_request":"74.65.202.32",
+  "geoplugin_status":200,
+  "geoplugin_credit":"Some of the returned data includes GeoLite data created by MaxMind, available from <a href=\\'http:\/\/www.maxmind.com\\'>http:\/\/www.maxmind.com<\/a>.",
+  "geoplugin_city":"Brooklyn",
+  "geoplugin_region":"NY",
+  "geoplugin_areaCode":"718",
+  "geoplugin_dmaCode":"501",
+  "geoplugin_countryCode":"US",
+  "geoplugin_countryName":"United States",
+  "geoplugin_continentCode":"NA",
+  "geoplugin_latitude":"40.7021",
+  "geoplugin_longitude":"-73.9423",
+  "geoplugin_regionCode":"NY",
+  "geoplugin_regionName":"New York",
+  "geoplugin_currencyCode":"USD",
+  "geoplugin_currencySymbol":"&#36;",
+  "geoplugin_currencySymbol_UTF8":"$",
+  "geoplugin_currencyConverter":1
+}

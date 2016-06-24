@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 19.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 1000 1000" style="enable-background:new 0 0 1000 1000;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#FFFFFF;}
+	.st1{fill:#FFFFFF;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;}
+	.st2{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;}
+	.st3{fill:#FFFFFF;stroke:#000000;stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round;}
+	.st4{fill:#FFFFFF;stroke:#000000;}
+	.st5{fill:none;stroke:#000000;stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round;}
+	.st6{fill:none;stroke:#000000;}
+</style>
+<polyline class="st0" points="431.4,509.5 431.4,443.2 459,427.3 567.6,490 567.6,556.3 "/>
+<g>
+	<line class="st1" x1="567.6" y1="490.2" x2="567.6" y2="556.5"/>
+	<g>
+		<g>
+			<line class="st0" x1="431.4" y1="509.6" x2="431.4" y2="443.3"/>
+		</g>
+		<g>
+			<line class="st2" x1="431.4" y1="509.6" x2="431.4" y2="443.3"/>
+		</g>
+	</g>
+	<line class="st1" x1="431.4" y1="443.3" x2="459" y2="427.5"/>
+	<line class="st1" x1="540.1" y1="572.3" x2="567.6" y2="556.5"/>
+	<line class="st1" x1="459" y1="427.5" x2="567.6" y2="490.2"/>
+	<line class="st1" x1="567.6" y1="490.2" x2="567.6" y2="556.5"/>
+	<path class="st3" d="M431.4,443.3"/>
+	<polyline class="st1" points="567.6,490.2 459,427.5 459,427.5 431.4,443.3 431.4,509.6 	"/>
+	<line class="st3" x1="540.1" y1="506.1" x2="567.6" y2="490.2"/>
+	<path class="st4" d="M540.1,572.3l27.6-15.9L540.1,572.3z"/>
+	<g>
+		<g>
+			<polyline class="st0" points="431.4,443.3 540.1,506.1 540.1,572.3 			"/>
+		</g>
+		<g>
+			<polyline class="st5" points="431.4,443.3 540.1,506.1 540.1,572.3 			"/>
+		</g>
+	</g>
+</g>
+<line class="st6" x1="431.4" y1="509.6" x2="540.1" y2="572.3"/>
+</svg>

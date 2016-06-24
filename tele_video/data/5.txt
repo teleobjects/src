@@ -1,0 +1,7 @@
+facebookapp_,530,0,5,450,0,12
+screen,bell,settings,time,bluetooth,battery
+lcd,sounds,accounts,schedule,bluetooth,battery
+remember how popular you are
+and who is thinking about you.
+all of your likes and follows,
+with sounds for different apps!

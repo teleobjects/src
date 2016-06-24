@@ -1,0 +1,7 @@
+name,shape,command
+play,heart,-20
+up,arrow_up,-10
+down,arrow_down,-11
+right,arrow_left,-12
+left,arrow_right,-13
+play,heart,-20

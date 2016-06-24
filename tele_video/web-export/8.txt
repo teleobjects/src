@@ -1,0 +1,7 @@
+cameraapp_,-260,-300,3.5,-100,-305,14
+cam,screen,axis,location,wifi,battery
+cam,lcd,gyroscope,gps,Wi-Fi,battery
+peek into your significant other,
+two-way dedicated video channel.
+take it everywhere with you,
+face down for private moments!

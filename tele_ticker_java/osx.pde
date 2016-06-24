@@ -24,7 +24,7 @@ void initComm() {
 void beginComm() {
   usb = true;
   for (int i=0; i<Serial.list().length; i++) {
-    if (Serial.list()[i].indexOf(usb ? "1441" : "teleobject") != -1) {
+    if (Serial.list()[i].indexOf(usb ? "usbmodem" : "teleobject") != -1) {
       portName = Serial.list()[i];   
       println("connecting to "+portName);
       try {

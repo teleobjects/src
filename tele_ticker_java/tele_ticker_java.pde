@@ -65,7 +65,6 @@ void setup() {
   weather = new Weather();
   mail = new Mail();
   messaging = new Messaging();
-
   alpha = new Alpha();
   gui = new Gui();
   gui.init();
@@ -85,24 +84,20 @@ void draw() {
       }
     }
   } else {
-
-    if (connected && connecting && google.loggedin) {
+    if (connected && connecting) {
       connecting = false;
-      writeString("", INSTANT, 1, 1, 1);
-      writeString(cleanUp("Hi "+profile.givenName+"!", false), TICKER, 10, 1, 1);
+      writeString("", BLANK, 1, 1, 1);
+      writeString(cleanUp("Hi "+ (google.loggedin ? profile.givenName : "there") +"!", false), TICKER, 10, 1, 1);
       gui.refresh = true;
     }
     if (channel == EQ || channel == AXIS) gui.refresh = true;
     if (!connected) busy = alpha.busy;     /// simulator
-
     updateComm();
-
     time.update();
     geolocation.update();
     weather.update();
     eq.update();
     gui.update();
-    // println("play");
     play();
   }
 }

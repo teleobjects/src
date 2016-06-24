@@ -1,0 +1,7 @@
+whatsapp_,-380,260,5,-305,240,12
+settings,bluetooth,time,usb,speaker,battery
+Presets,Bluetooth,Schedule,USB,Speaker,Battery
+real time content at a glance!
+keep an eye on your notifications,
+unread messages, latest tweets,
+upcoming events and much more!

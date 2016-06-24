@@ -81,16 +81,16 @@ void sendDweet(String key_, String value_) {
 }
 
 void displayDweet(float thisX, float thisY) {
-  dweetA += (dweetTargetA - dweetA)*.05;
-  if (latestDweet.info != null) {
-    pushMatrix();
-    translate(thisX, thisY);
-    textAlign(LEFT);
-    //textFont(fontBold, 20);
-    fill(redColor);
-    text(latestDweet.info, 0, 0);
-    popMatrix();
-  }
+  //dweetA += (dweetTargetA - dweetA)*.05;
+  //if (latestDweet.info != null) {
+  //  pushMatrix();
+  //  translate(thisX, thisY);
+  //  textAlign(LEFT);
+  //  //textFont(fontBold, 20);
+  //  fill(redColor);
+  //  text(latestDweet.info, 0, 0);
+  //  popMatrix();
+  //}
 }
 
 class Dweet {

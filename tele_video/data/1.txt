@@ -1,0 +1,7 @@
+skypeapp_,-270,-80,3.2,-350,-30,18
+screen,touch,speaker,mic,battery,wifi
+LCD,Touch,Speaker,Mic,Battery,Wi-Fi
+tilt frame to select contact,
+knock on photo to place call.
+screen color indicates status,
+group chats with multiple friends!

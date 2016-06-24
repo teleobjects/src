@@ -8,8 +8,8 @@ KetaiCamera cam;
 long lastCam;
 int camDelay = 100;
 
-int w = 320;
-int h = 240;
+int w = 360;
+int h = 360;
 
 //PImage camImage;
 
@@ -17,9 +17,20 @@ int h = 240;
 void initSensors() {
   sensor = new KetaiSensor(this);
   sensor.start();
-  //cam = new KetaiCamera(this, w, h, 24);
+  cam = new KetaiCamera(this, w, h, 24);
+  cam.setCameraID(1);
+}
 
-  //cam.setCameraID(1);
+void displayCam() {
+  //filter(grayscale);
+  pushMatrix();
+  //tint(255,0,0);
+  rotate(PI/2);
+  scale(1.1);
+  cam.filter(GRAY);
+
+  image(cam, 0, 0);
+  popMatrix();
 }
 
 void updateCam() {

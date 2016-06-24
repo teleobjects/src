@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 19.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 1000 1000" style="enable-background:new 0 0 1000 1000;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#FFFFFF;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;}
+	.st1{fill:#FFFFFF;}
+	.st2{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;}
+	.st3{fill:none;stroke:#000000;stroke-width:0.25;stroke-linecap:round;stroke-linejoin:round;}
+</style>
+<g>
+	<line class="st0" x1="523.7" y1="485.4" x2="523.7" y2="531.7"/>
+	<g>
+		<g>
+			<line class="st1" x1="476.1" y1="514" x2="476.1" y2="467.7"/>
+		</g>
+		<g>
+			<line class="st2" x1="476.1" y1="514" x2="476.1" y2="467.7"/>
+		</g>
+	</g>
+	<line class="st0" x1="476.1" y1="467.7" x2="485.1" y2="463"/>
+	<line class="st0" x1="514.7" y1="536.4" x2="523.7" y2="531.7"/>
+	<line class="st0" x1="485.1" y1="463" x2="523.7" y2="485.4"/>
+	<line class="st2" x1="523.7" y1="485.4" x2="523.7" y2="531.7"/>
+	<g>
+		<g>
+			<polyline class="st2" points="514.2,536.1 476.1,514 476.1,467.7 			"/>
+		</g>
+	</g>
+	<g>
+		<g>
+			<polyline class="st3" points="476.1,467.7 514.7,490.1 514.7,536.4 514.2,536.1 			"/>
+		</g>
+	</g>
+	<path class="st3" d="M476.1,467.7"/>
+	<line class="st2" x1="476.1" y1="467.7" x2="485.1" y2="463"/>
+	<line class="st3" x1="514.7" y1="490.1" x2="523.7" y2="485.4"/>
+	<line class="st2" x1="514.7" y1="536.4" x2="523.7" y2="531.7"/>
+	<line class="st2" x1="485.1" y1="463" x2="523.7" y2="485.4"/>
+</g>
+<path class="st3" d="M491.7,505.6"/>
+<path class="st3" d="M504.5,513.1"/>
+<line class="st3" x1="487.8" y1="485.9" x2="504.5" y2="495.7"/>
+<line class="st3" x1="504.5" y1="515.3" x2="504.5" y2="495.7"/>
+<line class="st3" x1="504.5" y1="515.3" x2="487.8" y2="505.5"/>
+<path class="st3" d="M504.5,515.3"/>
+<path class="st3" d="M489.9,489"/>
+<path class="st3" d="M489.9,504.2"/>
+<line class="st3" x1="487.8" y1="505.5" x2="489.9" y2="504.2"/>
+<line class="st3" x1="489.9" y1="504.2" x2="489.9" y2="487.1"/>
+<line class="st3" x1="489.9" y1="504.2" x2="504.4" y2="512.7"/>
+<line class="st3" x1="487.8" y1="505.5" x2="487.8" y2="485.9"/>
+</svg>

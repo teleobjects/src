@@ -108,7 +108,6 @@ public void setup() {
   weather = new Weather();
   mail = new Mail();
   messaging = new Messaging();
-
   alpha = new Alpha();
   gui = new Gui();
   gui.init();
@@ -128,24 +127,20 @@ public void draw() {
       }
     }
   } else {
-
-    if (connected && connecting && google.loggedin) {
+    if (connected && connecting) {
       connecting = false;
-      writeString("", INSTANT, 1, 1, 1);
-      writeString(cleanUp("Hi "+profile.givenName+"!", false), TICKER, 10, 1, 1);
+      writeString("", BLANK, 1, 1, 1);
+      writeString(cleanUp("Hi "+ (google.loggedin ? profile.givenName : "there") +"!", false), TICKER, 10, 1, 1);
       gui.refresh = true;
     }
     if (channel == EQ || channel == AXIS) gui.refresh = true;
     if (!connected) busy = alpha.busy;     /// simulator
-
     updateComm();
-
     time.update();
     geolocation.update();
     weather.update();
     eq.update();
     gui.update();
-    // println("play");
     play();
   }
 }
@@ -2289,62 +2284,61 @@ public void initComm() {
 }
 
 public void beginComm() {
- usb = true;
- for (int i=0; i<Serial.list().length; i++) {
-   if (Serial.list()[i].indexOf(usb ? "1441" : "teleobject") != -1) {
-     portName = Serial.list()[i];   
-     println("connecting to "+portName);
-     try {
-       port = new Serial(this, portName, 115200);
-       connecting = true;
-       connected = true;
-       // paired = true;
-       println("connected to "+portName);
-       break;
-     } 
-     catch (Exception e) {
-       println("could not connect to "+portName);
-     }
-   }
- }
+  usb = true;
+  for (int i=0; i<Serial.list().length; i++) {
+    if (Serial.list()[i].indexOf(usb ? "usbmodem" : "teleobject") != -1) {
+      portName = Serial.list()[i];   
+      println("connecting to "+portName);
+      try {
+        port = new Serial(this, portName, 115200);
+        connecting = true;
+        connected = true;
+        println("connected to "+portName);
+        break;
+      } 
+      catch (Exception e) {
+        println("could not connect to "+portName);
+      }
+    }
+  }
 }
 
 public void updateComm() {
- if (connected) {
-   rx();
- }
+  if (connected) {
+    rx();
+  }
 }
 
 public void terminateComm() {
- port = null;
- connected = false;
+  port = null;
+  connected = false;
 }
 
 public void tx(byte[] data) {
- if (connected) {
-   txR = PApplet.parseInt(millis() - lastTx);
-   lastTx = millis();
-   port.write(data);
-   if (debug) {
+  if (connected) {
+    txR = PApplet.parseInt(millis() - lastTx);
+    lastTx = millis();
+    port.write(data);
+    if (debug) {
      Packet newPacket = new Packet(false, "", getPilot(usb ? "usb" : "bluetooth").x);
    }
  }
 }
 
 public void rx() {
- if (connected) {
-   if (port.available() > 13  ) {
-     byte[] data = port.readBytesUntil(254);
-     rxR = PApplet.parseInt(millis() - lastRx);
-     lastRx = millis();
-     if (data != null) {
-       parseBytes(data);
-       if (debug) {
-         Packet newPacket = new Packet(true, "", getPilot(usb ? "usb" : "bluetooth").x);
-       }
-     }
-   }
- }
+  if (connected) {
+    if (port.available() > 13  ) {
+      byte[] data = port.readBytesUntil(254);
+      rxR = PApplet.parseInt(millis() - lastRx);
+      lastRx = millis();
+      if (data != null) {
+        parseBytes(data);
+        if (debug) {
+          Packet newPacket = new Packet(true, "", getPilot(usb ? "usb" : "bluetooth").x);
+        }
+      }
+    }
+  }
 }
 
 /////////////////

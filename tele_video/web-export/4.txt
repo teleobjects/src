@@ -1,0 +1,7 @@
+markerapp_,400,250,4,500,220,9.5
+compass,location,axis,battery,sdcard,usb
+compass,gps,gyroscope,battery,memory,usb
+meet your travel companion...
+check how far you are from home
+and the best way to get there,
+with real time transit updates!

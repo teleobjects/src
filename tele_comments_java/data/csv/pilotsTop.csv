@@ -1,0 +1,13 @@
+name,shape,command
+sleep,moon,0
+settings,settings,200
+bluetooth,bluetooth,-2
+usb,usb,201
+wifi,wifi,105
+online,world,104
+battery,battery,17
+axis,axis,18
+time,time,106
+eq,pulse,107
+compass,compass,16
+location,location,100

@@ -1,15 +1,16 @@
-int displayW = 240;
+int displayW = 320;
 color redColor = color(190, 30, 45);
 PFont orator;
 int overlay = 255;
 
-final int BLANK = 0;
+final int START = 0;
 final int CONTACTS = 1;
-final int IMAGERY = 2;
-final int CAM = 3;
+final int CAM = 2;
+final int IMAGERY = 3;
+
 
 class Display {
-  int mode = CONTACTS ;
+  int mode = START ;
   PImage imagery;
 
   Display () {
@@ -17,14 +18,26 @@ class Display {
   }
 
   void display() {
-    translate(width/2, height/2);
-    scale(height/240.0);
+    //translate(width/2, height/2);
+    //scale(height/240.0);
     switch (mode) {
-    case BLANK:
-      fill(255);
+
+    case START:
       rectMode(CENTER);
-      rect(0, 0, width, height);
+      fill(255, 0, 0);
+      rect(0, 0, displayW, displayW);
+      fill(255);
+      textFont(font);  
+      textAlign(CENTER, CENTER);
+      textSize(24);
+      text("teleobjects", 0, 0);
       break;
+
+    //case BLANK:
+    //  fill(255);
+    //  rectMode(CENTER);
+    //  rect(0, 0, displayW, displayW);
+    //  break;
     case CONTACTS:
       //if (debug) println("new contact");
       scale(1.018);
@@ -37,39 +50,36 @@ class Display {
       if (imagery != null) {
         if (imagery.width > 0) {
           pushMatrix();
-          scale(240.0/imagery.height*1.01);
+          scale(displayW/imagery.height*1.01);
           image(imagery, 0, 0);
           popMatrix();
         }
       }
       break;
     case CAM:
-      background(0, 0, 255);
+      //background(0, 0, 255);
       updateCam();
-      pushMatrix();
-      scale(240.0/cam.height*1.01);
-      image(cam, 0, 0);
-      popMatrix();
+      displayCam();
       break;
     }
-    if (overlay > 2) {
-      fill(255, overlay);
-      rectMode(CENTER);
-      rect(0, 0, width, height);
-      overlay -= 4;
-    }
+    //if (overlay > 2) {
+    //  fill(0, overlay);
+    //  rectMode(CENTER);
+    //  rect(0, 0, displayW, displayW);
+    //  overlay -= 4;
+    //}
 
-    if (android) {
-      fill(0);
-      pushMatrix();
-      scale(2.15);
-      shape(mask, 0, 0);
-      popMatrix();
-      translate(-360/2, -height/2);
-      rectMode(CORNER);
-      rect(0, 0, 60, height);
-      rect(360-60, 0, 60, height);
-    }
+    //if (android) {
+    //  fill(0);
+    //  pushMatrix();
+    //  scale(2.15);
+    //  shape(mask, 0, 0);
+    //  popMatrix();
+    //  translate(-360/2, -height/2);
+    //  rectMode(CORNER);
+    //  rect(0, 0, 60, height);
+    //  rect(360-60, 0, 60, height);
+    //}
   }
 
   void drawItems() {

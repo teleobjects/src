@@ -1,0 +1,7 @@
+mapapp_,180,220,3.5,103,236,6
+screen,touch,location,wifi,usb,settings
+lcd,touch,gps,usb,wifi,presets
+explore your neighborhood,
+locate your friends,
+track your urban adventures,
+and discover popular places!

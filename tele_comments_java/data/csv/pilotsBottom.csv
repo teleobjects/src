@@ -1,0 +1,13 @@
+name,shape,command
+profile,freaky,202
+contacts,freaky,101
+mail,mail,110
+calendar,calendar,115
+drive,drive,112
+news,nytimes,114
+a,nytimes,-10
+b,nytimes,-11
+c,nytimes,-12
+facebook,like,116
+twitter,twitter,113
+weather,cloud,103

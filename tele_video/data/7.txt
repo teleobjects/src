@@ -1,0 +1,7 @@
+wifiapp_,275,-125,5,200,-150,9.9
+wifi,pulse,cloud,location,battery,usb
+wifi,graph,share,location,battery,usb
+visualize your network speed,
+dowload and upload bandwidths,
+silent and reliable motors,
+for fast and smooth operation!

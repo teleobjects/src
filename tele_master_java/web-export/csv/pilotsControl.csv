@@ -1,0 +1,13 @@
+name,shape,command
+loop,loop,-27
+play,play,-12
+up,arrow_up,-13
+down,arrow_down,-14
+right,arrow_left,-15
+left,arrow_right,-16
+jump,screen,-18
+demo,heart,-19
+box,box,-21
+mobile,mobile,-22
+hello,sync,150
+bye,moon,151
