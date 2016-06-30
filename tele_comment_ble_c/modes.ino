@@ -64,7 +64,7 @@ void parse() {
 
     case TICKER:
       clearDisplay(tack);
-      cX = 0;
+      cursorX = 0;
       dis[tack] = "";
       data = cleanString(data.substring(PACKETIN, data.length()));
       busy = true;
@@ -85,9 +85,9 @@ void play() {
         lastTick = millis();
         if (data.length() > 0) {
           dis[tack] += data[0];
-          cX += charWidth(data[0]);
+          cursorX += charWidth(data[0]);
           data = data.substring(1, data.length());
-          if (cX > WIDTH || data.length() == 0) {
+          if (cursorX > WIDTH || data.length() == 0) {
             busy = false;
           }
         }
@@ -95,13 +95,13 @@ void play() {
       clearDisplay(tack);
       printDisplay(dis[tack], tack, 0, 0);
       // CURSOR
-      if (cX < WIDTH && cX >= 0) {
+      if (cursorX < WIDTH && cursorX >= 0) {
         if (millis() % 500 < 250) {
           setTextColor(LED_OFF);
         } else {
           setTextColor(LED_ON);
         }
-        printDisplay("_", tack, cX, 0);
+        printDisplay("_", tack, cursorX, 0);
         setTextColor(LED_ON);
       }
       updateDisplay(tack);

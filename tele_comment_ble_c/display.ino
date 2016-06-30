@@ -32,8 +32,9 @@ void initDisplay() {
 }
 
 void setBrightness(byte b) {
+  brightness = b;
   for (byte i = 0; i < NUM; i++) {
-    matrix[i].setBrightness(b);
+    matrix[i].setBrightness(brightness);
   }
 }
 
@@ -153,24 +154,4 @@ int textWidth(String c) {
   return matrix[tack * 8].getTextWidth(c);
 }
 
-void battery() {
-  if (millis() - lastBattery > 1000 || lastCharging != charging) {
-    lastBattery = millis();
-    measuredvbat = analogRead(BAT_PIN);
-    charging = !digitalRead(CHARGE_PIN);
-    measuredvbat *= 2;    // we divided by 2, so multiply back
-    measuredvbat *= 3.3;  // Multiply by 3.3V, our reference voltage
-    measuredvbat /= 1024; // convert to voltage
-    if (charging != lastCharging) tx();
-    lastCharging = charging;
-    voltage = (int)(measuredvbat * 100);
-  }
-}
 
-
-//char *dtostrf (double val, signed char width, unsigned char prec, char *sout) {
-//  char fmt[4];
-////  sprintf(fmt, "%%%d.%df", width, prec);
-////  sprintf(sout, fmt, val);
-//  return sout;
-//}

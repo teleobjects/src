@@ -40,12 +40,12 @@ class FrameDisplay extends Display {
 
   void display() {
     pushMatrix();
-    scale(.60);
+    scale(.596);
     fill(255);
     stroke(0);
     pushMatrix();
     scale(4);
-    strokeWeight(thick/2.5);
+    strokeWeight(thickStroke);
     shape(outline, 0, 0);
     popMatrix();
     pushMatrix();
@@ -59,7 +59,7 @@ class FrameDisplay extends Display {
     shape(mask, 0, 0);
     noFill();
     stroke(0);
-    strokeWeight(thick);
+    strokeWeight(thickStroke*.59*1.6);
     shape(outline, 0, 0);
     popMatrix();
     popMatrix();

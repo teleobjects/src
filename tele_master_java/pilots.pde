@@ -16,7 +16,7 @@ void initPilots() {
     TableRow row = pilotTable.getRow(i);
     Pilot thisPilot = new Pilot(row.getString("name"), row.getString("shape"), row.getInt("command"));
     thisPilot.x = 80+(130*i);
-    thisPilot.y = 600;
+    thisPilot.y = android ? 700 : height - 100;
     pilots.add(thisPilot);
   }
 
@@ -25,60 +25,71 @@ void initPilots() {
     TableRow row = pilotTable.getRow(i);
     Pilot thisPilot = new Pilot(row.getString("name"), row.getString("shape"), row.getInt("command"));
     thisPilot.x = 80+(130*i);
-    thisPilot.y = 700;
+    thisPilot.y = android ? 820 : height;
     pilots.add(thisPilot);
   }
 }
 
 void displayPilots() {
   String bluetoothInfo = "";
-  boolean bluetoothOn = false;
+
   for (Teleobject teleobject : teleobjects) {
     if (teleobject.comm != null) {
-      if (teleobject.comm.connected) {
+      if (android) {
+        bluetoothInfo += (teleobject.comm.found ? teleobject.comm.portName : teleobject.name + " not found") + "\n";
+        bluetoothInfo += (teleobject.comm.paired ? "P" : "p" );
+        bluetoothInfo += (teleobject.comm.discovering ? "D" : "d");
+        bluetoothInfo += (teleobject.comm.discovered ? "S" : "s");
+        bluetoothInfo += (teleobject.comm.connected ? "C" : "c");
+        bluetoothInfo += (teleobject.comm.acknowledged ? "A" : "a");
+        bluetoothInfo += (teleobject.comm.busy ? "B" : "b") + "\n";
+        //bluetoothInfo += teleobject.comm.timeOuts + " timeouts";
+      } else {
         bluetoothInfo += teleobject.comm.portName+"\n";
-        bluetoothOn  = true;
-        } else {
-          bluetoothInfo += "not connected\n";
-        }
+        // bluetoothInfo += (teleobject.comm.acknowledged ? "acknowledged" : "not acknowledged") + "\n";
       }
     }
+  }
 
-    String energyInfo = "";
-    for (Teleobject teleobject : teleobjects) {
-      if (teleobject.comm != null) {
-        energyInfo += teleobject.comm.battery+"v "+(teleobject.comm.charging ? "c" : "b")+"\n";
-      }
+  String energyInfo = "";
+  for (Teleobject teleobject : teleobjects) {
+    if (teleobject.comm != null) {
+      energyInfo += teleobject.comm.battery+"v "+(teleobject.comm.charging ? "c" : "b")+"\n";
     }
+  }
 
-    String currentChannelName = "null";
+  String currentChannelName = "null";
 
-    Pilot currentPilot = getPilotByCommand(manager.channel);
-    if (currentPilot != null) currentChannelName = currentPilot.name.toUpperCase();
-    setPilot("play", manager.play);
+  Pilot currentPilot = getPilotByCommand(manager.channel);
+  if (currentPilot != null) currentChannelName = currentPilot.name.toUpperCase();
+  setPilot("play", manager.play);
 
   // TOP
 
   setPilot("settings", debug);
-  setPilot("settings", width + "x" + height + "px\n" + (retina ? "retina" : "non-retina") + "\n" + (int)frameRate +" fps\n");
+  setPilot("settings", width + "x" + height + "px\n" + (retina ? "retina" : "non-retina") + "\n" + (int)frameRate +" fps\n" + currentChannelName);
 
-  setPilot("bluetooth", bluetoothOn);
+  setPilot("bluetooth", bluetooth.available);
   setPilot("bluetooth", bluetoothInfo);
 
   setPilot("wifi", network.wifi); 
-  setPilot("wifi", network.wifiState+"\n"+network.hostIP+"\n"+network.hostName);
+  setPilot("wifi", (network.wifi ? "wifi enabled" : "wifi disabled") + "\n" + network.hostIP + "\n" + network.hostName+"\n" + (network.router ? "connected to WLAN" : "no WLAN" ));
+
+  setPilot("mobile", network.type + "\n" + network.state + "\n" + network.reason + "\n" + network.extra + "\n" + (network.roaming ? " roaming" : "not roaming") 
+    + "\n");
+  setPilot("mobile", network.networked); 
 
   setPilot("online", network.online);
-  setPilot("online", network.onlineState + "\n" + (network.online ? network.externalIP+"\n"+network.pingTime+"ms" : ""));
+  setPilot("online", (network.online ? "online" : "offline") + "\n" + (network.online ? network.externalIP+"\n"+network.pingTime+"ms" : ""));
 
-  setPilot("energy", manager.channel==ENERGY);
+  setPilot("energy", manager.channel == ENERGY);
   setPilot("energy", energyInfo);
 
-  setPilot("orientation", manager.channel==ORIENTATION);
+  setPilot("orientation", manager.channel == ORIENTATION);
   setPilot("orientation", "R "+(ticker.comm.ax>=0?"+":"")+int(ticker.comm.ax)+"\n"+"P "+(ticker.comm.ay>=0?"+":"")+int(ticker.comm.ay)+"\n"+"H "+(ticker.comm.az>=0?"+":"")+int(ticker.comm.az));
 
-  setPilot("time", manager.channel==TIME);
-  setPilot("time", getStringTime(true,":")+"\n"+getStringDate("/"));
+  setPilot("time", manager.channel == TIME);
+  setPilot("time", getStringTime(true, ":")+"\n"+getStringDate("/"));
 
   setPilot("sync", sync);
 
@@ -107,8 +118,7 @@ void displayPilots() {
     setPilot("google", profile.givenName+" "+ profile.familyName+"\n"+profile.email+"\n"+profile.id+"\n"+profile.kind+"\n"+profile.minAge+"\n"+profile.language);
     if (profile.img != null && google.loggedin) {
       setPilot("google", profile.img);
-    } 
-    else {
+    } else {
       getPilot("google").img = null;
     }
   }
@@ -122,7 +132,7 @@ void displayPilots() {
   setPilot("calendar", calendar.eventList.size()+" events");
 
   setPilot("youtube", manager.channel==YOUTUBE);
-  
+
   setPilot("drive", manager.channel==DRIVE);
 
   setPilot("twitter", manager.channel==TWITTER);
@@ -136,6 +146,7 @@ void displayPilots() {
   setPilot("foursquare", manager.channel==FOURSQUARE);
 
   setPilot("news", manager.channel==NEWS);
+  setPilot("news", getEasyTimeStamp(news.lastUpdated));
 
   setPilot("weather", manager.channel==WEATHER);
   setPilot("weather", weather.conditionMain+", "+(time.currentTimeStamp-weather.lastUpdated)/1000+"s"+"\n"+nf(metric ? getCelcius(weather.temp) : weather.temp, 0, 1) + (metric ? "°C" : char(29)+"°F")+"\n"+int(weather.humidity)+"% humidity"+"\n"+
@@ -151,6 +162,7 @@ void displayPilots() {
     thisPilot.display();
   }
 }
+
 
 void checkPilots() {
   for (Pilot thisPilot : pilots) {
@@ -195,8 +207,7 @@ class Pilot {
         noStroke();
         fill(backgroundColor);
         shape(mask, 0, 0);
-      } 
-      else {
+      } else {
         noFill();
         stroke(state ? redColor : 255);
         strokeWeight(2);
@@ -207,7 +218,7 @@ class Pilot {
       stroke(state ? redColor : whiteColor);
       shape(app, 0, 0);
     }
-    if (label!=null && (debug || (name.equals("bluetooth") && activeObject == null))) { 
+    if (label!=null && (debug || ((name.equals("bluetooth") || name.equals("settings")) && activeObject == null))) { 
       fill(50);
       textAlign(CENTER);
       int fontSize = android ? 20 : 16;
@@ -229,56 +240,56 @@ class Pilot {
   }
 }
 
-  // void setPilotRotation(String thisPilot, boolean thisRotation) {
-  //   for (Pilot pilot : pilots) {
-  //     if (pilot.name.equals(thisPilot)) {
-  //       pilot.rotating = thisRotation;
-  //       break;
-  //     }
-  //   }
-  // }
+// void setPilotRotation(String thisPilot, boolean thisRotation) {
+//   for (Pilot pilot : pilots) {
+//     if (pilot.name.equals(thisPilot)) {
+//       pilot.rotating = thisRotation;
+//       break;
+//     }
+//   }
+// }
 
-  Pilot getPilot(String thisPilot) {
-    for (Pilot pilot : pilots) {
-      if (pilot.name.equals(thisPilot)) {
-        return pilot;
-      }
-    }
-    return null;
-  }
-
-  Pilot getPilotByCommand(int thisCommand) {
-    for (Pilot pilot : pilots) {
-      if (pilot.command == thisCommand) {
-        return pilot;
-      }
-    }
-    return null;
-  }
-
-  void setPilot(String thisPilot, boolean thisState) {
-    for (Pilot pilot : pilots) {
-      if (pilot.name.equals(thisPilot)) {
-        pilot.state = thisState;
-        break;
-      }
+Pilot getPilot(String thisPilot) {
+  for (Pilot pilot : pilots) {
+    if (pilot.name.equals(thisPilot)) {
+      return pilot;
     }
   }
+  return null;
+}
 
-  void setPilot(String thisPilot, String thisLabel) {
-    for (Pilot pilot : pilots) {
-      if (pilot.name.equals(thisPilot)) {
-        pilot.label = thisLabel;
-        break;
-      }
+Pilot getPilotByCommand(int thisCommand) {
+  for (Pilot pilot : pilots) {
+    if (pilot.command == thisCommand) {
+      return pilot;
     }
   }
+  return null;
+}
 
-  void setPilot(String thisPilot, PImage img) {
-    for (Pilot pilot : pilots) {
-      if (pilot.name.equals(thisPilot)) {
-        pilot.img = img;
-        break;
-      }
+void setPilot(String thisPilot, boolean thisState) {
+  for (Pilot pilot : pilots) {
+    if (pilot.name.equals(thisPilot)) {
+      pilot.state = thisState;
+      break;
     }
   }
+}
+
+void setPilot(String thisPilot, String thisLabel) {
+  for (Pilot pilot : pilots) {
+    if (pilot.name.equals(thisPilot)) {
+      pilot.label = thisLabel;
+      break;
+    }
+  }
+}
+
+void setPilot(String thisPilot, PImage img) {
+  for (Pilot pilot : pilots) {
+    if (pilot.name.equals(thisPilot)) {
+      pilot.img = img;
+      break;
+    }
+  }
+}

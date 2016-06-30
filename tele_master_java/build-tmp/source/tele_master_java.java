@@ -7,6 +7,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date; 
 import java.util.Calendar; 
 import java.io.File; 
+import java.util.UUID; 
+import java.util.List; 
+import java.lang.Runtime; 
+import java.net.InetAddress; 
+import java.net.UnknownHostException; 
 import com.temboo.core.*; 
 import com.temboo.Library.Google.Spreadsheets.*; 
 import com.temboo.Library.Google.OAuth.*; 
@@ -20,8 +25,6 @@ import com.temboo.Library.Twitter.Trends.*;
 import com.temboo.Library.Twitter.Users.*; 
 import com.temboo.Library.Twitter.FriendsAndFollowers.*; 
 import com.temboo.Library.Google.Gmailv2.Messages.*; 
-import java.net.InetAddress; 
-import java.net.UnknownHostException; 
 import java.awt.image.BufferedImage; 
 import java.io.ByteArrayInputStream; 
 import java.io.ByteArrayOutputStream; 
@@ -29,8 +32,8 @@ import java.io.File;
 import java.io.IOException; 
 import java.io.InputStream; 
 import javax.imageio.ImageIO; 
-import processing.serial.*; 
 import ddf.minim.*; 
+import processing.serial.*; 
 
 import java.util.HashMap; 
 import java.util.ArrayList; 
@@ -50,6 +53,7 @@ public class tele_master_java extends PApplet {
 
 
 
+ 
 
 
 
@@ -62,7 +66,11 @@ public class tele_master_java extends PApplet {
 
 
 
-TembooSession session = new TembooSession("teleobjects", "teleobjects", "2KCJoyEHzlanzvmd6QAHlrSLuLPFffOw");
+
+
+
+
+TembooSession session;
 
 boolean debug = true;
 boolean verbose = true;
@@ -71,10 +79,15 @@ boolean sync = false;
 boolean retina = true;
 boolean android = false;
 
-Time time;
 Gui gui;
+
+Credentials credentials;
+Time time;
 Manager manager;
 Network network;
+Bluetooth bluetooth;
+Sensors sensors;
+Keyboard keyboard;
 Eq eq;
 Geolocation geolocation;
 
@@ -102,23 +115,28 @@ Teleobject activeObject;
 ArrayList<Teleobject> teleobjects;
 
 public void setup() {
-  
-  frameRate(60);
-  retina = displayDensity() == 2;
-   
-  // fullScreen();
+  // fullScreen(OPENGL);
   // orientation(LANDSCAPE);
 
-  gui = new Gui();
-  gui.init();
+  
+  retina = displayDensity() == 2;
+   
 
+  frameRate(60);
+
+  gui = new Gui();
+
+  credentials = new Credentials();
   time = new Time();
   network = new Network();
+  bluetooth = new Bluetooth(this);
+  keyboard = new Keyboard(this);
   geolocation = new Geolocation();
+  sensors = new Sensors(this);
   weather = new Weather();
   places = new Places();
   eq = new Eq(this);
-  messaging = new Messaging();
+  messaging = new Messaging(); 
 
   google = new Google();
   profile = new Profile();
@@ -159,10 +177,8 @@ public void setup() {
   teleobjects.add(comment);
   teleobjects.add(mailbox);
   teleobjects.add(reel);
-  teleobjects.add(frame);
-
-  activeObject = ticker;
-  // google.login();
+  //teleobjects.add(frame);
+  //activeObject = comment;
 }
 
 public void draw() {
@@ -173,387 +189,176 @@ public void draw() {
       if (google.authenticating) {
         google.login();
         manager.setChannel(GOOGLE);
-      } 
-      else if (twitter.authenticating) {
-        twitter.login();
-        manager.setChannel(TWITTER);
+        } else if (twitter.authenticating) {
+          twitter.login();
+          manager.setChannel(TWITTER);
+        }
+      }
+      } else {
+        time.update();
+        eq.update();
+        manager.update();
+        gui.update();
+        sensors.update();     
+        bluetooth.update();
+        //network.update();
+        //weather.update();
+
+        if (activeObject == null) {
+          ticker.update();
+          comment.update();
+          mailbox.update();
+          reel.update();
+          //frame.update();
+        } 
+        else {
+          activeObject.update();
+        }
+
+        if (activeObject == null) {
+          translate(width/2, height/2);
+          scale(android ? .9f : .68f);
+          ticker.display(-210, 120);
+          comment.display(-400, -200);
+          mailbox.display(-960, 108);
+          reel.display(750, 80);
+          frame.display(200, -218);
+        } 
+        else {
+          translate(width/2, height/2);
+          scale(width/1600.0f);
+          scale(1.2f);
+          activeObject.display(0, -70);
+        }
       }
     }
-  } 
-  else {
-
-    updateSensors();                 
-    time.update();
-    eq.update();
-
-    manager.update();
-    gui.update();
-
-    // weather.update();
-
-    ticker.update();
-    // mailbox.update();
-    // comment.update();
-    // reel.update();
-    // frame.update();
-
-    if (activeObject == null) {
-      translate(width/2, height/2);
-      scale(.7f);
-      ticker.display(-210, 120);
-      mailbox.display(-960, 108);
-      comment.display(-400, -200);
-      reel.display(740, 80);
-      frame.display(200, -220);
-    } 
-    else {
-      translate(width/2, height/2);
-      scale(width/1600.0f);
-      activeObject.display(0, -70);
-    }
-  }
-}
 // import android.os.Bundle;
-// import android.content.Context;
-
-// import blepdroid.*;
-// import blepdroid.BlepdroidDevice;
-// import java.util.UUID;
-
-// import android.net.wifi.ScanResult;     // required import for scanning networks
-// import android.net.wifi.WifiManager;    // required imports for wifi
-// import java.util.List;                  // Java import for lists
-
-// import android.net.ConnectivityManager;
-// import android.net.NetworkInfo;
-
+// import android.os.BatteryManager;
 // import android.os.Vibrator;
+
+// import android.content.Context;
+// import android.content.Intent;
+// import android.content.IntentFilter;
+// import android.content.Context;
+// import android.content.BroadcastReceiver;
+
+// import android.view.WindowManager;
+// import android.view.inputmethod.InputMethodManager;
+
+// import android.app.ActivityManager;
+
+// import android.net.wifi.ScanResult;
+// import android.net.wifi.WifiManager;
+// import android.net.NetworkInfo;
+// import android.net.ConnectivityManager;
+
 // import ketai.sensors.*; 
+// import ketai.ui.*;
 
-// import android.app.ActivityManager;  // required import for "nice" memory
-// import java.lang.Runtime;            // required import for max memory
-
-// public static UUID BLUEFRUIT_UART_SERVICE = UUID.fromString( "6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
-// public static UUID BLUEFRUIT_UART_TX = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E");
-// public static UUID BLUEFRUIT_UART_RX = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
-
-// KetaiLocation location;
-// KetaiAudioInput mic;
-
-// WifiManager wifiManager;          // instance of the WifiManager for getting network details
-// List<ScanResult> networks;        // list of ScanResult objects, parsed later
-
-// ConnectivityManager connMgr;
-
-// Vibrator vibe;    
-// long vibeDuration = 5;
-// long[] vibeList = { 0, 20, 20, 20, 20 };    
+// ActivityManager activityManager; 
+// WindowManager windowManager;
+// InputMethodManager inputMethodManager;
+// WifiManager wifiManager;
+// ConnectivityManager connectivityManager;
 
 // // MEMORY
 // float maxMemory = 0;  
 // int freeMemory = 0;
 
-// ActivityManager activityManager; 
+// // KEYBOARD
 
+// // boolean keyTyped=false;
+// // boolean keyboard;
 
 // public void onCreate(Bundle savedInstanceState) {
-//  super.onCreate(savedInstanceState);
-//  vibe = (Vibrator) getActivity().getSystemService(Context.VIBRATOR_SERVICE);
-//  wifiManager = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
-//  connMgr  = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-//  activityManager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
-//  //InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
-// }
-// boolean bleConnecting;
-// boolean discovering;
-// void vibrate() {
-//  vibe.vibrate(vibeDuration);
+//   super.onCreate(savedInstanceState);
+//   vibe = (Vibrator) getActivity().getSystemService(Context.VIBRATOR_SERVICE);
+//   wifiManager = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
+//   connectivityManager  = (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+//   activityManager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
+//   inputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+//   getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 // }
 
-// ///////////////
-// // SENSORS
-// ///////////////
+// KetaiLocation location;
+// KetaiAudioInput mic;
+// Vibrator vibe; 
 
+// class Sensors {
+//   long vibeDuration = 5;
+//   long[] vibeList = { 0, 20, 20, 20, 20 };    
 
-// void updateSensors() {
-//  if (!bleConnecting) {
-//    try {
-//      Blepdroid.initialize(this);
-//      bleConnecting = true;
-//    } 
-//    catch (Exception e) {
-//      println("error");
-//    }
-//  }
+//   PApplet parent;
 
-//  if (location == null) {
-//    try {
-//      location = new KetaiLocation(this);
-//      location.setUpdateRate(1000, 1);
-//    } 
-//    catch (Exception e) {
-//      println("error");
-//    }
-//  }
-//  freeMemory = activityManager.getMemoryClass();
-//  Runtime rt = Runtime.getRuntime();
-//  maxMemory = rt.maxMemory() / 1048576;    // convert from bytes to MB
-//  NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-//  if (networkInfo != null && networkInfo.isConnected()) {
-//  } else {
-//    network.online = false;
-//    network.onlineState = "offline";
-//  }
-//  switch (wifiManager.getWifiState()) {
-//  case 1: 
-//    network.wifiState = "Wifi disabled"; 
-//    network.wifi = false;
-//    break;
-//  case 3: 
-//    network.wifiState = "Wifi enabled"; 
-//    network.wifi = true;
-//    network.online = true;
-//    network.onlineState = "online";
-//    break;
-//  case 4: 
-//    network.wifiState = "Wifi state unknown"; 
-//    network.wifi = false; 
-//    break;
-//  default: 
-//    network.wifiState = "Wifi state: " + network.wifiState;
-//    network.wifi = false;
-//  }
-// }
+//   Sensors(PApplet _parent) {
+//     parent = _parent;
+//   }
 
-// void onCharacteristicChanged(BlepdroidDevice device_, String characteristic, byte[] data)
-// {
-//  for (int i=0; i<data.length; i++ ) {
-//    data[i] -= 48;
-//  }
-//  for (Teleobject teleobject : teleobjects) {
-//    if (teleobject.comm != null) {
-//      if (teleobject.comm.device != null) {
-//        if ( device_ == teleobject.comm.device) {
-//          teleobject.comm.lastRx = millis();
-//          if (debug) {
-//            Packet newPacket = new Packet(true, "", getPilot("bluetooth").x);
-//          }
-//          teleobject.comm.parseBytes(data);
-//        }
-//      }
-//    }
-//  }
-// }
+//   void update() {
+//     if (location == null) {
+//       try {
+//         location = new KetaiLocation(parent);
+//         location.setUpdateRate(5000, 5);
+//       } 
+//       catch (Exception e) {
+//         if (verbose) println("error initializing location");
+//       }
+//     }
+//   }
 
-// void onDeviceDiscovered(BlepdroidDevice device_)
-// {
-//  for (Teleobject teleobject : teleobjects) {
-//    if (teleobject.comm != null) {
-//      if (device_.address.contains(teleobject.comm.targetDeviceAddress)) {
-//        if (!teleobject.comm.connected) {
-//          teleobject.comm.deviceName = device_.name;
-//          teleobject.comm.deviceAddress = device_.address;
-//          teleobject.comm.deviceRssi = device_.rssi;
-//          if (Blepdroid.getInstance().connectDevice(device_)) {
-//            println("/////////////////////////////////////////////////////// connecting to "+ teleobject.name);
-//            teleobject.comm.portName = teleobject.comm.deviceAddress;
-//            teleobject.comm.device = device_;
-//            Blepdroid.getInstance().discoverServices(device_);
-//            teleobject.comm.connecting = true;
-//            //teleobject.comm.connected = true;
-//          } else {
-//            println("/////////////////////////////////////////////////////// couldn't connect to "+  teleobject.name);
-//          }
-//        }
-//      }
-//    }
-//  }
-// }
+//   void updateMemory() {
+//   }
 
-// void onServicesDiscovered(BlepdroidDevice device_, int status)
-// {
-//  for (Teleobject teleobject : teleobjects) {
-//    if (teleobject.comm != null) {
-//      if (teleobject.comm.device !=  null) {
-//        if ( device_ == teleobject.comm.device && !teleobject.comm.connected) {
-//          Blepdroid.getInstance().setCharacteristicToListen(device_, BLUEFRUIT_UART_RX);
-//          teleobject.comm.connected = true;
-//          teleobject.comm.connectionTime = millis();          
-//          println("/////////////////////////////////////////////////////// connected to "+ teleobject.name);
-//          discovering = false;
-//        }
-//      }
-//    }
-//  }
-// }
+//   void updateBattery() {
+//   }
 
-// void onBluetoothRSSI(BlepdroidDevice device_, int rssi)
-// {
-//  println(" onBluetoothRSSI " + device_.address + " " + Integer.toString(rssi));
-// }
-
-// void onBluetoothConnection(BlepdroidDevice device_, int state)
-// {
-//  for (Teleobject teleobject : teleobjects) {
-//    if (teleobject.comm != null) {
-//      if (teleobject.comm.device !=  null) {
-//        if ( device_ == teleobject.comm.device) {
-//          println("/////////////////////////////////////////////////////// connection made "+  teleobject.name);
-//          Blepdroid.getInstance().discoverServices(device_);
-//        }
-//      }
-//    }
-//  }
-// }
-
-
-// void onDescriptorWrite(BlepdroidDevice device, String characteristic, String data)
-// {
-//  //println("onDescriptorWrite " + characteristic + " " + data);
-// }
-
-// void onDescriptorRead(BlepdroidDevice device_, String characteristic, String data)
-// {
-//  //println(" onDescriptorRead " + characteristic + " " + data);
-// }
-
-// void onCharacteristicRead(BlepdroidDevice device_, String characteristic, byte[] data)
-// {
-//  //println("onCharacteristicRead " + characteristic + " " + data);
-// }
-
-// void onCharacteristicWrite(BlepdroidDevice device_, String characteristic, byte[] data)
-// {
-//  //println("onCharacteristicWrite " + characteristic + " " + data);
+//   void vibrate() {
+//     vibe.vibrate(vibeDuration);
+//   }
 // }
 
 // void onLocationEvent(double _latitude, double _longitude, double _altitude) {
-//  try {
-//    geolocation.located = true;
-//    geolocation.updated = false;
-//    geolocation.provider = location.getProvider();
-//    geolocation.longitude = _longitude;
-//    geolocation.latitude = _latitude;
-//    geolocation.altitude = _altitude;
-//  }
-//  catch (Exception e) {
-//    println("Exception "+e);
-//  }
+//   try {
+//     if (geolocation != null) {
+//       geolocation.located = true;
+//       geolocation.updated = false;
+//       geolocation.longitude = _longitude;
+//       geolocation.latitude = _latitude;
+//       geolocation.altitude = _altitude;
+//       //geolocation.provider = location.getProvider();
+//     }
+//     Packet newPacket = new Packet(false, "", getPilot("location").x);
+//     newPacket.init();
+//   }
+//   catch (Exception e) {
+//     println("Exception "+e);
+//   }
 // }
 
-// void   scanDevices() {
-//  Blepdroid.getInstance().scanDevices();
-// }    
 
-// ///////////////
-// // COMM
-// ///////////////
+// class Keyboard {
+//   PApplet parent;
+//   boolean keyboard;
 
-// class Comm {
-//  String targetDeviceAddress; 
+//   Keyboard(PApplet _parent) {
+//     parent = _parent;
+//   }
 
-//  BlepdroidDevice device;
-//  String deviceName = "";
-//  String deviceAddress = "";
-//  int deviceRssi = 0;
+//   void showKeyboard() {
+//     KetaiKeyboard.toggle(parent);
+//     keyboard = true;
+//   }
 
-//  final int BLE_PACKET_LENGHT = 18;
-//  final int TX_SPEED = 150;
+//   void hideKeyboard() {
+//     KetaiKeyboard.toggle(parent);
+//     keyboard = false;
+//   }
+// }
 
-//  boolean usb, bluetooth, connecting, connected, busy;
-//  String portName = "";
-//  String portNumber;
-//  long lastTx, lastRx;
-//  int txR;
-//  int rxR;
-//  int txDelay;
-//  long connectionTime;
-
-//  // PROTOCOL IN
-//  int packetLength = 11;
-
-//  // PROTOCOL OUT
-//  int headerLength = 4;
-
-//  // SENSOR
-//  float sens = .5;
-//  float ax, ay, az;
-//  boolean shock;
-//  int mm;
-//  float battery;
-//  boolean charging;
-
-//  Comm (PApplet _parent) {
-//  }
-
-//  void init() {
-//    bluetooth = true;
-//    bleBuffer = new ArrayList<String>();
-//    //Blepdroid.getInstance().scanDevices();
-//  }
-
-//  void update() {
-//    if (device != null && !connected && !discovering) {
-//     Blepdroid.getInstance().discoverServices(device);
-//     discovering = true;
-//    }
-//    tx();
-//  }
-
-//  void writeString(String thisString, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
-//    //txDelay = int(thisString.length()/BLE_PACKET_LENGHT*TX_SPEED*1.2);
-//    String str = "";
-//    str += char(thisMode+48);
-//    str += char(tack+48);
-//    str += char(teck+48);
-//    str += char(tick+48);
-//    str += char(tock+48);
-//    str += char(tuck+48);
-//    str += thisString + '\n';
-//    tx(str);
-//  }
-
-//  ArrayList<String> bleBuffer;
-
-//  void tx(String str) {
-//    while (true) {
-//      bleBuffer.add(str.length() > BLE_PACKET_LENGHT ? str.substring(0, BLE_PACKET_LENGHT) : str);
-//      if (str.length() > BLE_PACKET_LENGHT) {
-//        str = str.substring(BLE_PACKET_LENGHT, str.length());
-//      } else {
-//        break;
-//      }
-//    }
-//  }
-
-//  void tx() {
-//    if (connected) {
-//      if (bleBuffer.size() > 0 ) {
-//        if (millis() - lastTx > TX_SPEED) {// && millis() > globalLastTx + GLOBAL_TX_SPEED) {
-//          Blepdroid.getInstance().writeCharacteristic(device, BLUEFRUIT_UART_TX, bleBuffer.get(0).getBytes());
-//          if (debug) {
-//            Packet newPacket = new Packet(false, "", getPilot("bluetooth").x);
-//          }
-//          bleBuffer.remove(0);
-//          txR = int(millis() - lastTx);
-//          lastTx = millis();
-//          busy = true;
-//        }
-//      }
-//    }
-//  }
-
-//  void parseBytes(byte[] data) {
-//    if (data.length == packetLength) {
-//      mm = data[0];
-//      ax = data[2]*(data[1] == 1 ? -1 : 1);
-//      ay = data[4]*(data[3] == 1 ? -1 : 1);
-//      az = data[6]*(data[5] == 1 ? -1 : 1);
-//      battery = (data[7]+320.0)/100.0;
-//      charging = (data[8] == 1);
-//      busy = false;
-//    }
-//  }
+// void keyTyped() 
+// {
+//   //keyTyped = true;
+//   println("key typed");
 // }
 
 
@@ -561,65 +366,475 @@ public void draw() {
 // // MIC
 // ///////////////
 
-// short[] micData;
+
+
+// class Eq {
+
+//   short[] micData;
+
+//   char[] eqData;
+//   float[] eqVal;
+//   int res= 32;
+
+//   float rightL;
+//   float leftL;
+//   float eqFilter = .2;
+
+//   Eq( PApplet parent) {
+//     mic = new KetaiAudioInput(parent);
+//     eqData = new char[res];
+//     startMic();
+//   }
+
+//   void update() {
+//     //if (manager.channel == EQ) {
+//     if (micData != null) {
+//       pushMatrix();
+//       stroke(redColor);
+//       strokeWeight(4);
+//       translate((width-1280)/2, 0);
+//       scale(1.3, 0);
+//       for (int i = 0; i < micData.length; i++) {
+//         if (i != micData.length-1) {
+//           line(i, map(micData[i], -32768, 32767, height, 0), i+1, map(micData[i+1], -32768, 32767, height, 0));
+//         }
+//       }
+//       popMatrix();
+//     }
+//   } else {
+
+//   //}
+
+//   void startMic() {
+//     if (!mic.isActive()) {
+//       mic.start();
+//     }
+//   }
+
+//   void stopMic() {
+//     if (mic.isActive()) {
+//       mic.stop();
+//     }
+//   }
+// }
 
 // void onAudioEvent(short[] _micData)
 // {
-//  //println("audio event");
-//  micData= _micData;
+//   eq.micData= _micData;
 // }
 
-// class Eq {
-//  char[] eqData;
-//  float[] eqVal;
-//  int res= 32;
-
-//  float rightL;
-//  float leftL;
-//  float eqFilter = .2;
-
-//  Eq( PApplet parent) {
-//    mic = new KetaiAudioInput(parent);
-//    eqData = new char[res];
-//    //mic.start();
-//  }
-
-//  void update() {
-//    //if (ticker.editor.channel == EQ) {
-//    //if (!mic.isActive()) {
-//    //  mic.start();
-//    //}
-//    //if (micData != null) {
-//    //  pushMatrix();
-//    //  stroke(redColor);
-//    //  strokeWeight(4);
-//    //  translate((width-1280)/2, 0);
-//    //  scale(1.3, 0);
-//    //  for (int i = 0; i < micData.length; i++) {
-//    //    if (i != micData.length-1) {
-//    //      line(i, map(micData[i], -32768, 32767, height, 0), i+1, map(micData[i+1], -32768, 32767, height, 0));
-//    //    }
-//    //  }
-//    //  popMatrix();
-//    //}
-//    //} else {
-//    //  if (mic.isActive()) {
-//    //    mic.stop();
-//    //  }
-//  }
-//  //
-//  char[] getPage () {
-//    return eqData;
-//  }
-// }
-
-// //void tx (byte[] data) {
-// //}
-
-// //void rx() {
-// //}
 
 // void downloadByteArrayAsImage(String url, String fileName) {
+// }
+// import blepdroid.*;
+// import blepdroid.BlepdroidDevice;
+
+// UUID BLUEFRUIT_UART_SERVICE = UUID.fromString( "6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
+// UUID BLUEFRUIT_UART_TX = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E");
+// UUID BLUEFRUIT_UART_RX = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
+
+// class Bluetooth {
+//   PApplet parent;
+
+//   Bluetooth(PApplet _parent) {
+//     parent = _parent;
+//   }
+
+//   boolean available;
+//   boolean initialized;
+//   boolean discovering;
+
+//   void update() {
+//     if (!initialized) {
+//       try {
+//         Blepdroid.initialize(parent);
+//         initialized = true;
+//         if (verbose) println("initalizing bluetooth");
+//       } 
+//       catch (Exception e) {
+//         if (verbose) println("error initializing bluetooth");
+//       }
+//     } else {
+//       for (Teleobject teleobject : teleobjects) {        
+//         if (teleobject.comm != null && teleobject.comm.found && teleobject.comm.paired && !teleobject.comm.discovering && !teleobject.comm.discovered && !discovering) {
+//           if (verbose) println("/////////////////////////////////////////////////////// discovering services for "+  teleobject.name);
+//           teleobject.comm.discovering = true;
+//           Blepdroid.getInstance().discoverServices(teleobject.comm.device);
+//           discovering = true;
+//         }
+//       }
+//     }
+//   }
+
+//   void scan() {
+//     //if (verbose) println("/////////////////// scanning devices");
+//     //Blepdroid.getInstance().scanDevices();
+//     //for (Teleobject teleobject : teleobjects) {
+//     //  if (teleobject.comm != null && teleobject.comm.device != null && teleobject.comm.paired) {
+//     //    //Blepdroid.getInstance().connectDevice(teleobject.comm.device);
+//     //  }
+//     //}
+//   }
+  
+//   void release() {
+    
+//   }
+// }
+
+// void onCharacteristicChanged(BlepdroidDevice device_, String characteristic, byte[] data)
+// {
+//   for (int i=0; i<data.length; i++ ) {
+//     data[i] -= 48;
+//   }
+//   for (Teleobject teleobject : teleobjects) {
+//     if (teleobject.comm != null && teleobject.comm.device != null && device_ == teleobject.comm.device) {
+//       teleobject.comm.lastRx = millis();
+//       if (debug) {
+//         Packet newPacket = new Packet(true, "", getPilot("bluetooth").x);
+//         newPacket.init();
+//       }
+//       teleobject.comm.parseBytes(data);
+//     }
+//   }
+// }
+
+// void onDeviceDiscovered(BlepdroidDevice device_)
+// {
+//   bluetooth.available = true;
+//   for (Teleobject teleobject : teleobjects) {
+//     if (teleobject.comm != null && device_.address.contains(teleobject.comm.targetDeviceAddress)) {
+//       if (!teleobject.comm.found) {
+//         println("/////////////////////////////////////////////////////// target device found "+teleobject.name);
+//         teleobject.comm.deviceName = device_.name;
+//         teleobject.comm.deviceAddress = device_.address;
+//         teleobject.comm.deviceRssi = device_.rssi;
+//         teleobject.comm.portName = teleobject.comm.deviceAddress;
+//         teleobject.comm.device = device_;
+//         teleobject.comm.found = true;
+//         //if (!teleobject.comm.paired) {
+//         if (Blepdroid.getInstance().connectDevice(device_)) { 
+//           if (verbose) println("/////////////////////////////////////////////////////// pairing to "+ teleobject.name);
+//         } else {
+//           if (verbose) println("/////////////////////////////////////////////////////// couldn't pair to "+  teleobject.name);
+//         }
+//         //}
+//       }
+//     }
+//   }
+// }
+
+// void onBluetoothConnection(BlepdroidDevice device_, int state)
+// {
+//   for (Teleobject teleobject : teleobjects) {
+//     if (teleobject.comm != null && teleobject.comm.device !=  null && device_ == teleobject.comm.device) {
+//       if (verbose) println("/////////////////////////////////////////////////////// paring successfull to "+  teleobject.name + " "+state);
+//       teleobject.comm.paired = true;
+//     }
+//   }
+// }
+
+// void onBluetoothRSSI(BlepdroidDevice device_, int rssi)
+// {
+//   if (verbose) println("onBluetoothRSSI " + device_.address + " " + Integer.toString(rssi));
+// }
+
+// void onServicesDiscovered(BlepdroidDevice device_, int status)
+// {
+//   for (Teleobject teleobject : teleobjects) {
+//     if (teleobject.comm != null && teleobject.comm.device != null && device_ == teleobject.comm.device && teleobject.comm.discovering) {
+//       Blepdroid.getInstance().setCharacteristicToListen(device_, BLUEFRUIT_UART_RX);
+//       teleobject.comm.discovering = false;
+//       teleobject.comm.discovered = true;
+//       teleobject.comm.connected = true;
+//       teleobject.comm.connecting = true;
+//       teleobject.comm.connectionTime = millis();          
+//       bluetooth.discovering = false;
+//       if (verbose) println("/////////////////////////////////////////////////////// connected to "+ teleobject.name + " " + status);
+//     }
+//   }
+// }
+
+// //void onDescriptorWrite(BlepdroidDevice device, String characteristic, String data)
+// //{
+// //  //println("onDescriptorWrite " + characteristic + " " + data);
+// //}
+
+// //void onDescriptorRead(BlepdroidDevice device_, String characteristic, String data)
+// //{
+// //  //println(" onDescriptorRead " + characteristic + " " + data);
+// //}
+
+// //void onCharacteristicRead(BlepdroidDevice device_, String characteristic, byte[] data)
+// //{
+// //  //println("onCharacteristicRead " + characteristic + " " + data);
+// //}
+
+// //void onCharacteristicWrite(BlepdroidDevice device_, String characteristic, byte[] data)
+// //{
+// //  //println("onCharacteristicWrite " + characteristic + " " + data);
+// //}
+// class Comm {
+//   String targetDeviceAddress; 
+
+//   BlepdroidDevice device;
+
+//   String deviceName = "";
+//   String deviceAddress = "";
+//   int deviceRssi = 0;
+
+//   final int BLE_PACKET_LENGHT = 18;
+//   final int TX_SPEED = 100;
+
+//   boolean usb, bluetooth;
+
+//   boolean connecting, connected, found, paired, discovering, discovered, acknowledged, busy;
+
+//   String portName = "";
+//   String name = "";
+//   String portNumber;
+//   long lastTx, lastRx;
+//   int txR;
+//   int rxR;
+//   int txDelay; /// to sync simulator....
+
+//   long connectionTime; // check when is set
+//   int timeOuts = 0;
+
+//   // PROTOCOL IN
+//   int packetLength = 11;
+
+//   // PROTOCOL OUT
+//   int headerLength = 6;
+
+//   // SENSOR
+
+//   float ax, ay, az;
+//   boolean shock;
+//   int mm;
+//   float battery;
+//   int minBat = 320;
+//   int maxBat = 425;
+//   boolean charging;
+//   int brightness;
+
+//   Comm (PApplet _parent) {
+//   }
+
+//   void reset() {
+//     device = null;
+//     connecting = false;
+//     connected = false;
+//     discovered = false;
+//     discovering = false;
+//     found = false;
+//     acknowledged = false;
+//   }
+
+//   void init() {
+//     bluetooth = true;
+//     bleBuffer = new ArrayList<String>();
+//   }
+
+//   void update() {
+//     tx();
+//   }
+
+//   void writeString(String thisString, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
+//     //txDelay = int(thisString.length()/BLE_PACKET_LENGHT*TX_SPEED*1.2);
+//     String str = "";
+//     str += char(thisMode+48);
+//     str += char(tack+48);
+//     str += char(teck+48);
+//     str += char(tick+48);
+//     str += char(tock+48);
+//     str += char(tuck+48);
+//     str += thisString + '\n';
+//     addToTxBuffer(str);
+//     busy = true;
+//     if (debug) {
+//       println(name+"|"+thisMode+"|"+tack+"|"+teck+"|"+tick+"|"+tock+"|"+tuck+"|"+thisString);
+//     }
+//   }
+
+//   ArrayList<String> bleBuffer;
+
+//   void addToTxBuffer(String str) {
+//     while (true) {
+//       if (str.length() >= BLE_PACKET_LENGHT) {
+//         bleBuffer.add(str.substring(0, BLE_PACKET_LENGHT));
+//         str = str.substring(BLE_PACKET_LENGHT, str.length());
+//       } else {
+//         bleBuffer.add(str);
+//         break;
+//       }
+//     }
+//   }
+
+//   void tx() {
+//     if (connected) {
+//       if (bleBuffer.size() > 0 ) {
+//         if (millis() - lastTx > TX_SPEED) {
+//           //bluetooth.write(
+//           Blepdroid.getInstance().writeCharacteristic(device, BLUEFRUIT_UART_TX, bleBuffer.get(0).getBytes());
+//           if (debug) {
+//             Packet newPacket = new Packet(false, "", getPilot("bluetooth").x);
+//             newPacket.init();
+//           }
+//           bleBuffer.remove(0);
+//           txR = int(millis() - lastTx);
+//           lastTx = millis();
+//           busy = true;
+//         }
+//       }
+//     }
+//   }
+
+//   void parseBytes(byte[] data) {
+//     acknowledged = true;
+//     if (data.length == packetLength) {
+//       mm = data[0];
+//       ax = data[2]*(data[1] == 1 ? -1 : 1);
+//       ay = data[4]*(data[3] == 1 ? -1 : 1);
+//       az = data[6]*(data[5] == 1 ? -1 : 1);
+//       battery = (data[7]+320.0)/100.0;
+//       charging = (data[8] == 1);
+//       brightness = data[9];
+//       busy = false;
+//     }
+//   }
+// }
+// class Network {
+//   NetworkInfo networkInfo;
+//   List<ScanResult> networks;
+
+//   String hostName; 
+//   String hostIP; 
+//   String externalIP;
+//   String ipFinderUrl = "https://api.ipify.org";
+
+//   String type;
+//   String state;
+//   String reason;
+//   String extra;
+//   boolean roaming;
+//   boolean available;
+//   boolean networked, router, wifi, online, pinging, loading;
+
+//   int pingTime;
+//   long pingStart;
+
+//   boolean updated;
+//   long lastUpdated;
+
+//   Network () {
+//     update();
+//   }
+
+//   void update() {
+//     //if (!updated) {
+//     //  updated = true;
+//     lastUpdated = time.currentTimeStamp;
+//     switch (wifiManager.getWifiState()) {
+//     case 1: 
+//       wifi = false;
+//       break;
+//     case 3: 
+//       wifi = true;
+//       break;
+//     case 4: 
+//       wifi = false; 
+//       break;
+//     default: 
+//       wifi = false;
+//     }
+//     if (wifi) {
+//       try { 
+//         InetAddress addr = InetAddress.getLocalHost(); 
+//         //byte[] ipAddr = addr.getAddress(); 
+//         String raw_addr = addr.toString(); 
+//         String[] list = split(raw_addr, '/'); 
+//         hostIP = list[1]; 
+//         hostName = addr.getHostName();
+//         if (hostIP.indexOf(":") != -1 || hostIP.contains("127.0.0.1")) {
+//           router = false;
+//         } else {  
+//           router = true;
+//         }
+//       } 
+//       catch (UnknownHostException e) {
+//         println(e);
+//       }
+//     }
+//     networkInfo = connectivityManager.getActiveNetworkInfo();
+//     if (networkInfo != null) {
+//       networked = false;
+//       String[] networkInfoItems = splitTokens(networkInfo+"", ",");
+//       type = networkInfoItems[0].substring(7, networkInfoItems[0].length());
+//       state = networkInfoItems[1].substring(7, networkInfoItems[1].length());
+//       reason = networkInfoItems[2].substring(9, networkInfoItems[2].length());
+//       extra = removeQuotes(networkInfoItems[3].substring(8, networkInfoItems[3].length()));
+//       roaming = networkInfoItems[4].substring(10, networkInfoItems[4].length()).equals("true");
+//       //failover = networkInfoItems[5].substring(11, networkInfoItems[5].length()).equals("true");
+//       available = networkInfoItems[6].substring(14, networkInfoItems[6].length()).equals("true");
+//       //connected = networkInfoItems[7].substring(networkInfoItems[7].length()-6, networkInfoItems[7].length()-1);
+//     } else {
+//       networked = false;  
+//       type = "no network";
+//       state = "no state";
+//       reason = "no reason";
+//       extra = "no provider";
+//       roaming = false;
+//       available = false;
+//       online = false;
+//     }
+//     if (networkInfo != null) {
+//       if (!online && !pinging) {
+//         thread("ping");
+//       }
+//     } else {
+//       online = false;
+//     }
+//   }
+//   //}
+
+//   void getExternalIP() {
+//     String[] ip = loadStrings(ipFinderUrl);
+//     if (ip != null) {
+//       pingTime = int(millis() - pingStart);
+//       externalIP = ip[0];
+//     }
+//   }
+// }
+
+// void ping() {
+//   network.pinging = true;
+//   network.pingStart = millis();
+//   if (debug) { 
+//     Packet newPacket = new Packet(true, "", getPilot("online").x);
+//     newPacket.init();
+//   }
+//   if (debug) println("ping http://www.google.com");  
+//   try { 
+//     String[] contentThread = loadStrings("http://www.google.com");
+//     if (contentThread != null) {
+//       network.pingTime = int(millis() - network.pingStart);
+//       if (debug) {
+//         if (verbose) println("ping google in "+network.pingTime+"ms");
+//         Packet newPacket = new Packet(false, "", getPilot("online").x);
+//         newPacket.init();
+//         network.online = true;
+//       }
+//     } else {
+//       if (verbose) println("unable to reach google");
+//       network.online = false;
+//     }
+//   } 
+//   catch (Exception e) {
+//     if (debug) println(e);
+//     network.online = false;
+//     if (verbose) println("unable to reach google");
+//   }
+//   network.pinging = false;
 // }
 class Comment extends Teleobject {
   Comment(PApplet _parent) {
@@ -628,9 +843,9 @@ class Comment extends Teleobject {
 
   public void init() {
     comm = new Comm(parent);
-    display = new CommentDisplay();
-    comm.portNumber = "1421";
+    comm.portNumber = "14121";
     comm.targetDeviceAddress = "E4:CB:FF:38:3A:00";
+    display = new CommentDisplay();
     comm.init();
   }
 
@@ -641,87 +856,92 @@ class Comment extends Teleobject {
       break;
 
       case HELLO: 
-      pages.add(new Page("", TICKER, 0, 0, 0, 0, 1));
-      pages.add(new Page("", FONT, 1, 1, 0, 0, 1));
+      // pages.add(new Page("", TICKER, 0, 0, 0, 0, 1));
+      // pages.add(new Page("", FONT, 1, 1, 0, 0, 1));
       if (!google.loggedin) {
-        pages.add(new Page("What's up?", TICKER, 0, 0, 80, 0, 1));
-        } else {
-          pages.add(new Page("What's up", TICKER, 0, 0, 80, 0, 1));
-          pages.add(new Page(profile.givenName+"?", TICKER, 1, 0, 80, 0, 1));
-        }
-        break;
+        pages.add(new Page("What's up?", TICKER, 0, 0, 40, 0, 1));
+      } 
+      else {
+        pages.add(new Page("What's up", TICKER, 0, 0, 40, 0, 1));
+        pages.add(new Page(profile.givenName+"?", TICKER, 1, 0, 40, 0, 1));
+      }
+      break;
 
-        case LOCATION:
-        if (!geolocation.updated) {
-          pages.add(new Page("We're lost...", TICKER, 0, 0, 50, 0, 1));
-          } else {
+      case LOCATION:
+      if (!geolocation.updated) {
+        pages.add(new Page("We're lost...", TICKER, 0, 0, 50, 0, 1));
+      } 
+      else {
+        pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+        pages.add(new Page(getCoordinate(geolocation.latitude, true), CENTERED, 0, 0, 0, 0, 1));
+        pages.add(new Page(getCoordinate(geolocation.longitude, false), CENTERED, 1, 0, 0, 0, 20));
+        pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+        pages.add(new Page(geolocation.houseNumber+" "+geolocation.street, SCROLL_ALL_RIGHT, 0, 0, 10, 0, 5));
+        pages.add(new Page(geolocation.neighbourhood+" "+geolocation.postCode, TICKER, 0, 0, 20, 0, 5));
+        pages.add(new Page(geolocation.city+", "+geolocation.state, TICKER, 1, 0, 20, 0, 20));
+      }
+      break;
+
+      case WEATHER:
+      if (!weather.updated) {
+        pages.add(new Page("can't connect to the cloud...", TICKER, 0, 0, 50, 0, 0));
+      } 
+      else {
+        pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
+        pages.add(new Page(("weather"), SCROLL_CENTER_RIGHT, 0, 0, 0, 0, 30));
+        pages.add(new Page((weather.condition+" in "+geolocation.neighbourhood), SCROLL_ALL_RIGHT, 1, 0, 5, 0, 1));
+        pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+        pages.add(new Page("It's "+nf(metric ? getCelcius(weather.temp) : weather.temp, 0, 1) + (metric ? "\u00b0c" : "\u00b0f"), CENTERED, 0, 0, 0, 0, 10));
+        pages.add(new Page("and it's gonna get hotter...", SCROLL_ALL_RIGHT, 1, 0, 10, 0, 10));
+        pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+        pages.add(new Page("humidity", CENTERED, 0, 0, 0, 0, 5));
+        pages.add(new Page(PApplet.parseInt(weather.humidity)+"%", CENTERED, 1, 0, 0, 0, 10));
+        pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+        pages.add(new Page("pressure", CENTERED, 0, 0, 0, 0, 5));
+        pages.add(new Page(PApplet.parseInt(weather.pressure)+"mPa", CENTERED, 1, 0, 0, 0, 10));
+        pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+        pages.add(new Page("wind", CENTERED, 0, 0, 0, 0, 5));
+        pages.add(new Page(PApplet.parseInt(weather.windSpeed) +"m/h "+(int)weather.windDeg+"\u00b0 "+getHeading(weather.windDeg), CENTERED, 1, 0, 0, 0, 10));
+      }
+      break;
+
+      case ONLINE:
+      pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+      pages.add(new Page("ip "+network.externalIP, CENTERED, 0, 0, 0, 0, 1));
+      pages.add(new Page("ping "+network.pingTime+"ms", CENTERED, 1, 0, 0, 0, 1));
+      break;
+
+      case WIFI:
+      pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+      pages.add(new Page(network.hostName, CENTERED, 0, 0, 0, 0, 1));
+      pages.add(new Page(network.hostIP, CENTERED, 1, 0, 0, 0, 1));
+      break;
+
+      case BLUETOOTH:
+      if (comm != null) {
+        if (comm.connected) {
+          if (!android) {
             pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-            pages.add(new Page(getCoordinate(geolocation.latitude, true), CENTERED, 0, 0, 0, 0, 1));
-            pages.add(new Page(getCoordinate(geolocation.longitude, false), CENTERED, 1, 0, 0, 0, 20));
+            pages.add(new Page(comm.portName.substring(0, 5), TICKER, 0, 0, 20, 0, 1));
+            pages.add(new Page(comm.portName.substring(5, comm.portName.length()), TICKER, 1, 0, 20, 0, 1));
+          } 
+          else {
             pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-            pages.add(new Page(geolocation.houseNumber+" "+geolocation.street, SCROLL_ALL_RIGHT, 0, 0, 10, 0, 5));
-            pages.add(new Page(geolocation.neighbourhood+" "+geolocation.postCode, TICKER, 0, 0, 20, 0, 5));
-            pages.add(new Page(geolocation.city+", "+geolocation.state, TICKER, 1, 0, 20, 0, 20));
+            pages.add(new Page(comm.deviceAddress, CENTERED, 0, 0, 0, 0, 1));
+            pages.add(new Page(comm.deviceRssi+"dB", CENTERED, 1, 0, 0, 0, 1));
           }
-          break;
+        } 
+        else {
+          pages.add(new Page("not connected...", TICKER, 0, 0, 10, 0, 1));
+        }
+      } 
+      break;
 
-          case WEATHER:
-          if (!weather.updated) {
-            pages.add(new Page("can't connect to the cloud...", TICKER, 0, 0, 50, 0, 0));
-            } else {
-              pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
-              pages.add(new Page(("weather"), SCROLL_CENTER_RIGHT, 0, 0, 0, 0, 30));
-              pages.add(new Page((weather.condition+" in "+geolocation.neighbourhood), SCROLL_ALL_RIGHT, 1, 0, 5, 0, 1));
-              pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-              pages.add(new Page("It's "+nf(metric ? getCelcius(weather.temp) : weather.temp, 0, 1) + (metric ? "\u00b0c" : "\u00b0f"), CENTERED, 0, 0, 0, 0, 10));
-              pages.add(new Page("and it's gonna get hotter...", SCROLL_ALL_RIGHT, 1, 0, 10, 0, 10));
-              pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-              pages.add(new Page("humidity", CENTERED, 0, 0, 0, 0, 5));
-              pages.add(new Page(PApplet.parseInt(weather.humidity)+"%", CENTERED, 1, 0, 0, 0, 10));
-              pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-              pages.add(new Page("pressure", CENTERED, 0, 0, 0, 0, 5));
-              pages.add(new Page(PApplet.parseInt(weather.pressure)+"mPa", CENTERED, 1, 0, 0, 0, 10));
-              pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-              pages.add(new Page("wind", CENTERED, 0, 0, 0, 0, 5));
-              pages.add(new Page(PApplet.parseInt(weather.windSpeed) +"m/h "+(int)weather.windDeg+"\u00b0 "+getHeading(weather.windDeg), CENTERED, 1, 0, 0, 0, 10));
-            }
-            break;
+      case ENERGY:
+      pages.add(new Page("", BATTERY, 0, 0, 0, 0, 1));
+      break;
 
-            case ONLINE:
-            pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-            pages.add(new Page("ip "+network.externalIP, CENTERED, 0, 0, 0, 0, 1));
-            pages.add(new Page("ping "+network.pingTime+"ms", CENTERED, 1, 0, 0, 0, 1));
-            break;
-
-            case WIFI:
-            pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-            pages.add(new Page(network.hostName, CENTERED, 0, 0, 0, 0, 1));
-            pages.add(new Page(network.hostIP, CENTERED, 1, 0, 0, 0, 1));
-            break;
-
-            case BLUETOOTH:
-            if (comm != null) {
-              if (comm.connected) {
-                if (!android) {
-                  pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-                  pages.add(new Page(comm.portName.substring(0, 5), TICKER, 0, 0, 20, 0, 1));
-                  pages.add(new Page(comm.portName.substring(5, comm.portName.length()), TICKER, 1, 0, 20, 0, 1));
-                  } else {
-                    pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-                    pages.add(new Page(comm.deviceAddress, CENTERED, 0, 0, 0, 0, 1));
-                    pages.add(new Page(comm.deviceRssi+"dB", CENTERED, 1, 0, 0, 0, 1));
-                  }
-                  } else {
-                    pages.add(new Page("not connected...", TICKER, 0, 0, 10, 0, 1));
-                  }
-                } 
-                break;
-
-                case ENERGY:
-                pages.add(new Page("", BATTERY, 0, 0, 0, 0, 1));
-                break;
-
-                case TIME:
+      case TIME:
       //pages.add(new Page(getStringTime(true, "."), CENTERED, 0, 0, 0, 0, 10));
       //if (newPage) pages.add(new Page(time.monthStr+" "+time.day+"th, "+time.year, CENTERED, 1, 0, 0, 0, 0));//time.dayStr+", "+
       String hour_ = nf(hour(), 2, 0);
@@ -746,12 +966,13 @@ class Comment extends Teleobject {
         pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
         pages.add(new Page("let's!", CENTERED, 0, 0, 0, 0, 10));
         pages.add(new Page("rock!", CENTERED, 1, 0, 0, 0, 30));
-        } else {
-          pages.add(new Page("let's login to google!"+profile.givenName, CENTERED, 0, 0, 10, 0, 0));
-        }
-        break;
+      } 
+      else {
+        pages.add(new Page("let's login to google!"+profile.givenName, CENTERED, 0, 0, 10, 0, 0));
+      }
+      break;
 
-        case CONTACTS:
+      case CONTACTS:
       // pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
       pages.add(new Page(contacts.contactList.size()+" friends!", CENTERED, 0, 0, 0, 0, 40));
       for (Contact contact : contacts.contactList) {
@@ -771,36 +992,56 @@ class Comment extends Teleobject {
           pages.add(new Page(article.title, SCROLL_ALL_RIGHT, 1, 0, 5, 0, 0));
           pages.add(new Page(article.content, SCROLL_ALL_RIGHT, 1, 0, 5, 0, 0));
         }
-        } else {
-          pages.add(new Page("can't find...", TICKER, 0, 0, 60, 0, 30));
-          pages.add(new Page(("...the newspaper"), TICKER, 1, 0, 60, 0, 30));
-        }
-        break;
+      } 
+      else {
+        pages.add(new Page("can't find...", TICKER, 0, 0, 60, 0, 30));
+        pages.add(new Page(("...the newspaper"), TICKER, 1, 0, 60, 0, 30));
+      }
+      break;
 
-        case CALENDAR:
-        pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
-        if (calendar.updated) {
-          pages.add(new Page(("remember...?"), SCROLL_CENTER_RIGHT, 0, 0, 0, 0, 50));
+      case CALENDAR:
+      pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
+      if (calendar.updated) {
+        pages.add(new Page(("remember...?"), SCROLL_CENTER_RIGHT, 0, 0, 0, 0, 50));
         for (int i=0; i<50; i++) {           // for (Event event : calendar.eventList) {         
           Event event = calendar.eventList.get((int)random(calendar.eventList.size()));
           pages.add(new Page(event.date, CENTERED, 0, 0, 0, 0, 0));
           pages.add(new Page(event.summary, SCROLL_ALL_RIGHT, 1, 0, 5, 0, 0));
         }
-        } else {
-          pages.add(new Page("can't find...", TICKER, 0, 0, 60, 0, 30));
-          pages.add(new Page(("...the calendar"), TICKER, 1, 0, 60, 0, 30));
-        }
-        break;
+      } 
+      else {
+        pages.add(new Page("can't find...", TICKER, 0, 0, 60, 0, 30));
+        pages.add(new Page(("...the calendar"), TICKER, 1, 0, 60, 0, 30));
       }
+      break;
     }
   }
+}
 class CommentDisplay extends Display {
   PShape outline;
-  float m = 58;
-  float w = m*8;
-  float h = m; 
+  float r = 7.3f;
   float offsetV = 50;
-  boolean busy = true;
+  int disW = 64;
+  int disH = 8;
+  boolean busy;
+  boolean[][][] dis = new boolean[2][64][8];
+
+  MonoFont standardFont = new MonoFont("glcdfont.c");
+  ProportionalFont tomFont = new ProportionalFont("TomThumb.h");
+  ProportionalFont freeSans9 = new ProportionalFont("FreeSansBold9pt7b.h");
+  ProportionalFont freeSans12 = new ProportionalFont("FreeSansBold12pt7b.h");
+  ProportionalFont freeSans18 = new ProportionalFont("FreeSansBold18pt7b.h");
+  // Font freeSans24 = new Font("FreeSansBold24pt7b.h");
+
+  Font[] fonts = {standardFont, tomFont, freeSans9, freeSans12, freeSans18};
+
+  String data;
+  int mode;
+  int tack, teck, tick, tock, tuck;
+  long lastTick;
+  int cursorLine, cursorX, cursorY;
+
+  int currentFont = 1;
 
   CommentDisplay() {
     outline = loadShape("shp/comment.svg");
@@ -808,72 +1049,154 @@ class CommentDisplay extends Display {
   }
 
   public void display() {
-    strokeWeight(thick);
+    // standardFont.display();
+    // tomFont.display();
+    // freeSans18.display();
+    update();
+    strokeWeight(thickStroke);
     stroke(0);
     fill(255);
     shape(outline, 0, 0);
-    translate(-230, - 45);
+    translate(-232, - 45);
     translate(0, -offsetV);
-    displayRow();
+    displayLine(0);
     translate(0, offsetV*2);
-    displayRow();
+    displayLine(1);
   }
 
-  public void displayRow() {
-    rectMode(CORNER);
-    ellipseMode(CORNER);
-    fill(50);
-    // rect(0,0,w,h,5);
-    stroke(redColor, 10);	
-    stroke(255, 50);
-    strokeWeight(.5f);
-    // noStroke();
-    fill(redColor);
-    for (int c = 0; c<8; c++) {
-      for (int x = 0; x<8; x++) {
-        for (int y=0; y<8; y++) {		
-          ellipse(c*m + (x*m/8.0f), y*m/8.0f, m/8.0f, m/8.0f);
+  public void displayLine(int thisLine) {
+    noStroke();
+    for (int column = 0; column < disW; column++) {
+      for (int row = 0; row < disH; row++) {
+        if (dis[thisLine][column][row]) {
+          fill(redColor);
+          ellipse(column * r, row * r, r-1, r-1);
+        } 
+        else {
+          fill(redColor, 10);
+          ellipse(column * r, row * r, r-1, r-1);
         }
       }
     }
   }
 
-  String invalid  = "`\u00b4_\u00e2\u0080\u0098\u00e1\u00e4\u00c1\u00c2\u00c4\u00e9\u00ea\u00eb\u00c9\u00ca\u00cb\u00ed\u00ee\u00ef\u00cd\u00ce\u00cf\u00f3\u00f4\u00f6\u00d3\u00d4\u00d6\u00fa\u00fb\u00fc\u00da\u00db\u00dc\u00f1\u00d1";
-  String subs     = "'' 'aaAAAeeeEEEiiiIIIoooOOOuuuUUUnN";
-  String valid = " !@#$%^&*()-+=[]}{;':<>,.?/01234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\u00b0'"+PApplet.parseChar(34);
+  public void update() {
+    switch (mode) {
+      case TICKER:  
+      if (data.length() > 0) {    
+        if (millis() - lastTick > tick) {
+          lastTick = millis();
+          cursorX += drawChar(data.charAt(0), tack, cursorX, cursorY);
+          data = data.substring(1,data.length());
+          cursorLine = tack;
+        } 
+      }
+      else {
+        busy = false;
+      }      
+      if (cursorX < disW && cursorX >= 0) drawChar(millis() % 500 < 250 ? ' ' : '_', cursorLine, cursorX, cursorY);
+      break;
+    }
+  }
 
-  public String cleanUp(String str) {
-    // println(str);
-    String res = "";
-    for (int i=0; i<str.length(); i++) {
-     char ch = str.charAt(i);
-     if (ch == '&'){
-      if (str.charAt(i+1) == '#') {
-        ch = 39;
-        i = i+6;
-      } else {
-       if (str.length() > i+5) {
-        if (str.charAt(i+5) == ';') {
-          ch = 39;
-          i = i+5;
+  public void printString(String thisString, int thisMode, int thisTack, int thisTeck, int thisTick, int thisTock, int thisTuck) {
+    data = thisString;
+    if (thisMode != PING) {
+      mode = thisMode;
+      tack = thisTack;
+      teck = thisTeck;
+      tick = thisTick;
+      tock = thisTock;
+      tuck = thisTuck;
+    }
+    busy = true;
+    lastTick = millis();
+    switch (mode) {
+      case TICKER:
+      clearDisplay(tack);
+      break;
+    }
+  }
+
+  public int drawChar(char thisChar, int thisLine, int x, int y) {
+    if (currentFont == 0) {
+      for (int row = 0; row < standardFont.h; row++) {
+        for (int column = 0; column < standardFont.w; column++) {
+          if (x + column < disW && y + row < disH) {
+            dis[thisLine][x+column][y+row] = standardFont.monoFontMap[(int)thisChar][column][row];
+          }
         }
+      }
+      return standardFont.w + 1;
+    } 
+    else  {
+      int glyphNum = (int)thisChar - fonts[currentFont].first;
+      int offset = fonts[currentFont].fontGlyphs[glyphNum][0];
+      int w = fonts[currentFont].fontGlyphs[glyphNum][1];
+      int h = fonts[currentFont].fontGlyphs[glyphNum][2];
+      int xAdvance = fonts[currentFont].fontGlyphs[glyphNum][3];
+      int offsetx = fonts[currentFont].fontGlyphs[glyphNum][4];
+      int offsety = fonts[currentFont].fontGlyphs[glyphNum][5];
+      int currentBit = 8;
+      int currentByte = 0;
+      int bits = 0;
+      for (int row = 0; row < disH; row++) {
+        for (int column = 0; column <= xAdvance; column++) {
+          int xx = x + column;
+          int yy = y + row;
+          if (xx > 0 && xx < disW && yy > 0 && yy < disH) {
+            dis[thisLine][xx][yy] = false;
+          }
+        }
+      }
+      for (int row = 0; row < h; row++) {
+        for (int column = 0; column < w; column++) {
+          if (currentBit == 8) {
+            bits = fonts[currentFont].fontMap.get(offset + currentByte);
+            currentByte ++;
+            currentBit = 0;
+          }
+          int xx = x + offsetx + column;
+          int yy = y + disH + offsety + row - 2;
+          if (xx >= 0 && xx < disW && yy >= 0 && yy < disH) {
+            if ((bits & (128 >> currentBit)) != 0) {
+              dis[thisLine][xx][yy] = true;
+            } 
+          }
+          currentBit++;         
+        }
+      }
+      return xAdvance;
+    }
+  }
+
+  public void drawString(String thisString, int thisLine, int x, int y) {
+    if (currentFont == 0) {
+      for (int i = 0; i < thisString.length(); i++) {
+        x += drawChar(thisString.charAt(i), thisLine, x, y);
+      }
+    } 
+    else {
+      for (int i = 0; i < thisString.length(); i++) {
+        x += drawChar(thisString.charAt(i), thisLine, x, y);
       }
     }
   }
-  if (ch > 127) {
-   ch = 39;
- }
- if (invalid.indexOf(ch) != -1) {
-   ch = subs.charAt(invalid.indexOf(ch));
- }
- if (valid.indexOf(ch) != -1) {
-   res +=  ch;
- } else {
-   res += '-';
- }
-}
-return res;
-}
+
+  public void clearDisplay(int thisLine) {
+    if (thisLine == 2) {
+      dis = new boolean[2][64][8];
+    } 
+    else {
+      for (int column = 0; column < disW; column++) {
+        for (int row = 0; row < disH; row++) {
+          dis[thisLine][column][row] = false;
+        }
+      }
+    }    
+    cursorX = 0;
+    cursorY = 0;
+  }
 }
 final int BOTTOM_EYE_LEFT = 27;
 final int BOTTOM_EYE_RIGHT = 27;
@@ -947,9 +1270,191 @@ CRYING_LEFT, EYES_CLOSED_LEFT, CROSS_DEAD_LEFT, X_DEAD_LEFT, UNDERSCORE_LEFT, DA
 int rightEyes[] = {BOTTOM_EYE_RIGHT, BOTTOM_EYE_CLOSED_RIGHT, TOP_EYE_RIGHT, TOP_EYE_CLOSED_RIGHT, NEUTRAL_RIGHT, 
 WIDE_EYED_RIGHT, WIDE_EYED_SURPRISED_RIGHT, SURPRISED_RIGHT, SCARED_RIGHT, ANGRY_RIGHT, PERPLEXED_RIGHT, HAPPY_RIGHT, 
 CRYING_RIGHT, EYES_CLOSED_RIGHT, CROSS_DEAD_RIGHT, X_DEAD_RIGHT, UNDERSCORE_RIGHT, DASH_RIGHT};
+class Font {
+	// String file;
+
+	String[] fontData;
+	ArrayList<Integer> fontMap;
+	ArrayList<String> charBitMaps;
+	int[][] fontGlyphs;
+	int first;
+	int last;
+	int yAdvance;
 
 
+	boolean monoFontMap[][][];
+	int w;
+	int h;
+}
 
+
+class ProportionalFont extends Font{
+	ProportionalFont(String thisFile) {
+		fontData = loadStrings("fonts/"+thisFile);
+		fontMap = new ArrayList<Integer>();
+		int lastLine = 0;
+		for (int i = 0; i < fontData.length; i++) {
+			String thisLine = removeSpaces(fontData[i]);
+			lastLine ++;
+			if (thisLine.length() > 2 && thisLine.substring(0,2).equals("0x")) {
+				String[] items = splitTokens(thisLine,",");
+				for (int j = 0; j<items.length; j++) {
+					String thisVal = removeSpaces(items[j]).substring(0,4);
+					if (thisVal.substring(0,2).equals("0x")) {
+						fontMap.add(unhex(thisVal.substring(2,4)));
+					}
+				}
+			}
+			if (thisLine.contains("};")) break;
+		}
+		int charNum = 0;
+		for (int i = lastLine; i < fontData.length; i++) {
+			String thisLine = removeSpaces(fontData[i]);
+			if (thisLine.length() > 2 && thisLine.charAt(0) == '{') {
+				charNum ++;
+			}
+			if (thisLine.contains("};")) break;
+		}
+		fontGlyphs = new int[charNum][6];
+		int currentChar = 0;
+		for (int i = lastLine; i < fontData.length; i++) {
+			String thisLine = removeSpaces(fontData[i]);
+			lastLine ++;
+			if (thisLine.length() > 2 && thisLine.charAt(0) == '{') {
+				String items[] = splitTokens(thisLine.substring(1,thisLine.length()));
+				for (int j = 0; j < 6; j++ ) {
+					fontGlyphs[currentChar][j] = parseInt(filterNumber(items[j]));
+				}
+				currentChar ++;
+			}
+			if (thisLine.contains("};")) break;
+		}
+		for (int i = lastLine; i < fontData.length; i++) {
+			String thisLine = removeSpaces(fontData[i]);
+			String[] items = splitTokens(thisLine,",");
+			if (items.length == 3) {
+				first = unhex(removeSpaces(items[0]).substring(2,4));
+				last = unhex(removeSpaces(items[1]).substring(2,4));
+				yAdvance = parseInt(removeSpaces(items[2].substring(0,items[2].length()-3)));
+			}
+		}
+	}
+
+	public void display() {
+		background(255);
+		int px = 4;
+		int cx = 0;
+		int cy = yAdvance*px;
+		int marginx = 1;
+		int marginy = 0;
+		rectMode(CORNER);
+		textSize(8);
+		textAlign(LEFT, TOP);
+		for (int i=0; i<fontGlyphs.length; i++) {
+			int offset = fontGlyphs[i][0];
+			int w = fontGlyphs[i][1];
+			int h = fontGlyphs[i][2];
+			int xAdvance = fontGlyphs[i][3];
+			int offsetx = fontGlyphs[i][4];
+			int offsety = fontGlyphs[i][5];
+			fill(255,0,0);
+			stroke(255,0,0,50);
+			noFill();
+			int tempy = (offsety*px);
+			text(i+first, cx, cy+tempy+(h*px));
+			rect(cx,cy+tempy, xAdvance * px, h*px);
+   		// int totalPixels = w * h;
+   		// int bytes = totalPixels/8;
+   		// if (totalPixels > bytes*8) bytes ++;
+   		// for (int thisByte = 0; thisByte < bytes; thisByte++) {
+   		// 	int bits = fontMap.get(offset+thisByte);
+   		// 	text(offset+thisByte+" "+bits, cx, cy + tempy + (thisByte * px));
+   		// }
+   		int currentBit = 8;
+   		int currentByte = 0;
+   		int tempX = offsetx * px;
+   		int bits = 0;
+   		for (int row = 0; row < h; row++) {
+   			for (int column = 0; column < w; column++) {
+   				if (currentBit == 8) {
+   					bits = fontMap.get(offset + currentByte);
+   					currentByte ++;
+   					currentBit = 0;
+   				}
+   				if ((bits & (128 >> currentBit)) != 0) {
+   					fill(50);
+   					stroke(255);
+   					rect(cx + tempX + (column * px), cy + tempy + (row * px), px, px);
+   				}
+   				currentBit++;   			
+   			}
+   		}
+
+   		cx += (xAdvance+marginx) * px;
+   		if (cx > width - ((w + xAdvance) * px)) {
+   			cx = 0;
+   			cy += px * (yAdvance+marginy);
+   		}
+   	}
+   }
+ }
+
+ class MonoFont extends Font{
+
+ 	MonoFont (String thisFile) {
+ 		monoFontMap = new boolean[256][w][h];
+ 		fontData = loadStrings("fonts/"+thisFile);
+ 		int currentChar = 0;
+ 		for (int i = 0; i < fontData.length; i++) {
+ 			String[] items = splitTokens(fontData[i],",");
+ 			if (items.length >= w) {
+ 				for (int column = 0; column < w; column ++) {
+ 					int thisRow = unhex(removeSpaces(items[column]).substring(2,4));
+ 					for (int row = 0; row < h; row++) {
+ 						monoFontMap[currentChar][column][row] = (thisRow & (1 << row)) != 0;
+ 					}
+ 				}
+ 				currentChar ++;
+ 			}
+ 		}
+ 	}
+
+ 	public void display() {
+ 		background(255);
+ 		int cx = 0;
+ 		int cy = 8;
+ 		int px = 7;
+ 		int offsetx = 3;
+ 		int offsety = 3;
+ 		rectMode(CORNER);
+ 		textSize(8);
+ 		textAlign(LEFT, TOP);
+ 		for (int i=0; i<monoFontMap.length; i++) {
+ 			fill(255,0,0);
+ 			text(i, cx, cy+(h*px));
+ 			stroke(255,0,0,50);
+ 			noFill();
+ 			rect(cx,cy,w*px, h*px);
+ 			for (int j=0; j<w; j++) {
+ 				for (byte k=0; k<h; k++) {
+ 					if (monoFontMap[i][j][k]) {
+ 						fill(50);
+ 						stroke(255);
+ 						rect(cx, cy, px, px);
+ 					}
+ 					cy += px;
+ 				}
+ 				cx += px;
+ 				cy -= px*h;
+ 			}
+ 			cx += offsetx*px;
+ 			if (cx > width-(w*px)) {
+ 				cx = 0;
+ 				cy += px*(h+offsety);
+ 			}
+ 		}
+ 	}
+ }
 class FrameDisplay extends Display {
   PShape outline, window, mask;
   int mode = 0;
@@ -992,12 +1497,12 @@ class FrameDisplay extends Display {
 
   public void display() {
     pushMatrix();
-    scale(.60f);
+    scale(.596f);
     fill(255);
     stroke(0);
     pushMatrix();
     scale(4);
-    strokeWeight(thick/2.5f);
+    strokeWeight(thickStroke);
     shape(outline, 0, 0);
     popMatrix();
     pushMatrix();
@@ -1011,7 +1516,7 @@ class FrameDisplay extends Display {
     shape(mask, 0, 0);
     noFill();
     stroke(0);
-    strokeWeight(thick);
+    strokeWeight(thickStroke*.59f*1.6f);
     shape(outline, 0, 0);
     popMatrix();
     popMatrix();
@@ -1024,12 +1529,8 @@ class FrameDisplay extends Display {
 // GOOGLE
 ////////////////////////
 
-//String CLIENT_ID = "113132524761-9vc5rqbcbqjq79msolp7iaki9vbehqsl.apps.googleusercontent.com";
-//String CLIENT_SECRET = "wB14XMGd7Ju_CZZh9Q3ukrwY";
-//String REFRESH_TOKEN = "1/hSZSH0vYOnV1kegywSyJUcxaTgGPv8pWcq1K_KtVouAMEudVrK5jSpoR30zcRFq6";
-
-String CLIENT_ID = "113132524761-c5gg9a8m6tq7nus1iad89enfk3t2lfjv.apps.googleusercontent.com";
-String CLIENT_SECRET = "iLxRPab7WJpdXJeLN8MjeqY_";
+String CLIENT_ID;// = "113132524761-c5gg9a8m6tq7nus1iad89enfk3t2lfjv.apps.googleusercontent.com";
+String CLIENT_SECRET;//  = "iLxRPab7WJpdXJeLN8MjeqY_";
 String REFRESH_TOKEN;
 String ACCESS_TOKEN;
 String CALLBACK_ID;
@@ -1039,9 +1540,14 @@ class Google {
   boolean logging;
   boolean authenticating;
 
-  String[] credentials;
+  String[] keys;
 
   Google() {
+    if (credentials.credentials != null) {
+      String[] items = splitTokens(credentials.credentials[1], ",");
+      CLIENT_ID = items[0];
+      CLIENT_SECRET = items[1];
+    }
     //login();
   }
 
@@ -1053,86 +1559,86 @@ class Google {
       loggedin = true;
       logging = false;
       manager.setChannel(GOOGLE);
-      } else {
-        authenticate();
-      }
-    }
-
-    public void logout() {
-      deleteFile("credentials.txt");
-      loggedin = false;
-      logging = false;
-      authenticating = false;
-      REFRESH_TOKEN = null;
-      ACCESS_TOKEN = null;
-      profile = new Profile();
-      google = new Google();
-      contacts = new GoogleContacts();
-      calendar = new GoogleCalendar();
-    }
-
-    public void authenticate() {
-      try {
-        credentials = loadLocal("credentials.txt");
-        if (credentials != null) {
-          REFRESH_TOKEN = credentials[0];
-          ACCESS_TOKEN = credentials[1];
-          println(REFRESH_TOKEN);
-          println(ACCESS_TOKEN);
-        }
-      } 
-      catch (Exception e) {
-        println("error");
-      }
-      if (REFRESH_TOKEN == null) {
-        if (network.online) {
-          runInitializeOAuthChoreo();
-        }
-      } else { //
-        profile.update();
-        loggedin = true;
-        logging = false;
-        manager.setChannel(GOOGLE);
-      }
-    }
-
-    public void runInitializeOAuthChoreo() {
-      com.temboo.Library.Google.OAuth.InitializeOAuth initializeOAuthChoreo = new com.temboo.Library.Google.OAuth.InitializeOAuth(session);
-      initializeOAuthChoreo.setClientID(CLIENT_ID);
-      String scopes = "http://www.google.com/m8/feeds/";
-      scopes += " https://www.googleapis.com/auth/drive";
-      scopes += " https://www.googleapis.com/auth/userinfo.email";
-      scopes += " https://www.googleapis.com/auth/userinfo.profile";
-      scopes += " http://www.google.com/m8/feeds/";
-      scopes += " https://spreadsheets.google.com/feeds/";
-      scopes += " https://www.googleapis.com/auth/calendar";
-      scopes += " https://www.googleapis.com/auth/plus.login";
-      scopes += " https://www.googleapis.com/auth/plus.profile.emails.read";
-      scopes += " https://mail.google.com/";
-      initializeOAuthChoreo.setScope(scopes);
-      com.temboo.Library.Google.OAuth.InitializeOAuthResultSet initializeOAuthResults = initializeOAuthChoreo.run();
-      link(initializeOAuthResults.getAuthorizationURL());
-      CALLBACK_ID = initializeOAuthResults.getCallbackID();
-      authenticating = true;
-    }
-
-    public void runFinalizeOAuthChoreo() {
-      com.temboo.Library.Google.OAuth.FinalizeOAuth finalizeOAuthChoreo = new com.temboo.Library.Google.OAuth.FinalizeOAuth(session);
-      finalizeOAuthChoreo.setCallbackID(CALLBACK_ID);
-      finalizeOAuthChoreo.setClientID(CLIENT_ID);
-      finalizeOAuthChoreo.setClientSecret(CLIENT_SECRET);
-      com.temboo.Library.Google.OAuth.FinalizeOAuthResultSet finalizeOAuthResults = finalizeOAuthChoreo.run();
-      println(finalizeOAuthResults.getErrorMessage());
-      println(finalizeOAuthResults.getExpires());
-      println(finalizeOAuthResults.getRefreshToken());
-      ACCESS_TOKEN = finalizeOAuthResults.getAccessToken();
-      REFRESH_TOKEN = finalizeOAuthResults.getRefreshToken();
-      credentials = new String[2];
-      credentials[0] = REFRESH_TOKEN;
-      credentials[1] = ACCESS_TOKEN;
-      saveLocal("credentials.txt", credentials);
+    } 
+    else {
+      authenticate();
     }
   }
+
+  public void logout() {
+    deleteFile("google.txt");
+    loggedin = false;
+    logging = false;
+    authenticating = false;
+    REFRESH_TOKEN = null;
+    ACCESS_TOKEN = null;
+    profile = new Profile();
+    google = new Google();
+    contacts = new GoogleContacts();
+    calendar = new GoogleCalendar();
+  }
+
+  public void authenticate() {
+    try {
+      keys = loadStrings("tmp/google.txt");
+      if (keys != null) {
+        REFRESH_TOKEN = keys[0];
+        ACCESS_TOKEN = keys[1];
+      }
+    } 
+    catch (Exception e) {
+      println("error");
+    }
+    if (REFRESH_TOKEN == null) {
+      if (network.online) {
+        runInitializeOAuthChoreo();
+      }
+    } 
+    else {
+      profile.update();
+      loggedin = true;
+      logging = false;
+      manager.setChannel(GOOGLE);
+    }
+  }
+
+  public void runInitializeOAuthChoreo() {
+    com.temboo.Library.Google.OAuth.InitializeOAuth initializeOAuthChoreo = new com.temboo.Library.Google.OAuth.InitializeOAuth(session);
+    initializeOAuthChoreo.setClientID(CLIENT_ID);
+    String scopes = "http://www.google.com/m8/feeds/";
+    scopes += " https://www.googleapis.com/auth/drive";
+    scopes += " https://www.googleapis.com/auth/userinfo.email";
+    scopes += " https://www.googleapis.com/auth/userinfo.profile";
+    scopes += " http://www.google.com/m8/feeds/";
+    scopes += " https://spreadsheets.google.com/feeds/";
+    scopes += " https://www.googleapis.com/auth/calendar";
+    scopes += " https://www.googleapis.com/auth/plus.login";
+    scopes += " https://www.googleapis.com/auth/plus.profile.emails.read";
+    scopes += " https://mail.google.com/";
+    initializeOAuthChoreo.setScope(scopes);
+    com.temboo.Library.Google.OAuth.InitializeOAuthResultSet initializeOAuthResults = initializeOAuthChoreo.run();
+    link(initializeOAuthResults.getAuthorizationURL());
+    CALLBACK_ID = initializeOAuthResults.getCallbackID();
+    authenticating = true;
+  }
+
+  public void runFinalizeOAuthChoreo() {
+    com.temboo.Library.Google.OAuth.FinalizeOAuth finalizeOAuthChoreo = new com.temboo.Library.Google.OAuth.FinalizeOAuth(session);
+    finalizeOAuthChoreo.setCallbackID(CALLBACK_ID);
+    finalizeOAuthChoreo.setClientID(CLIENT_ID);
+    finalizeOAuthChoreo.setClientSecret(CLIENT_SECRET);
+    com.temboo.Library.Google.OAuth.FinalizeOAuthResultSet finalizeOAuthResults = finalizeOAuthChoreo.run();
+    println(finalizeOAuthResults.getErrorMessage());
+    println(finalizeOAuthResults.getExpires());
+    println(finalizeOAuthResults.getRefreshToken());
+    ACCESS_TOKEN = finalizeOAuthResults.getAccessToken();
+    REFRESH_TOKEN = finalizeOAuthResults.getRefreshToken();
+    keys = new String[2];
+    keys[0] = REFRESH_TOKEN;
+    keys[1] = ACCESS_TOKEN;
+    saveStrings("tmp/google.txt", keys);
+  }
+}
 
 /////////////////////////////////////
 // PROFILE
@@ -1143,6 +1649,7 @@ class Profile {
   int minAge;
   PImage img = null;
   boolean updated;
+  long lastUpdated;
 
   Profile () {
   }
@@ -1150,7 +1657,7 @@ class Profile {
   public void update() {
     JSONObject choreo = null;
     try {
-      String[] choreoBuffer = loadLocal("profile.json");
+      String[] choreoBuffer = loadStrings("tmp/profile.json");
       choreo = JSONObject.parse(concatenate(choreoBuffer));
     } 
     catch (Exception e) {
@@ -1172,13 +1679,13 @@ class Profile {
       language = choreo.getString("language");
       minAge = choreo.getJSONObject("ageRange").getInt("min");
       try {
-        img = loadLocalImage(id+".png");
+        //img = loadLocalImage(id+".png");
       } 
       catch (Exception e) {
       }
       if (img == null) {
-        img = loadImage(url);
-        saveLocal(id+".png", img);
+        //img = loadImage(url);
+        //saveLocal(id+".png", img);
       }
       updated = true;
     }
@@ -1287,7 +1794,7 @@ class GoogleDrive {
   }
 
   public void update() {
-    if (network.online) {
+    if (network.online && false) {
       String logId = "1nDJ7lBSpylE5ORHF6xTntc4N9iqq8m3j_LW7Ok5K8RQ";
       String driveUrl = "https://docs.google.com/spreadsheets/d/"+logId+"/export?format=tsv&id="+logId;
       driveContent = loadUrl(driveUrl);
@@ -1508,9 +2015,8 @@ int redColor = color(190, 30, 45);
 int backgroundColor = 200;
 PFont font;//, fontBold, fontMono, fontMonoBold;
 
+float thickStroke = 3;
 PShape app, mask;
-
-float thick = 3;
 
 class Gui {
   boolean refresh = true;
@@ -1521,10 +2027,12 @@ class Gui {
   ArrayList<Packet> packets;
 
   Gui () {
+    init();
   }
 
   public void init() {
     imageMode(CENTER);
+    ellipseMode(CENTER);
     app = loadShape("shp/app.svg");
     app.disableStyle();
 
@@ -1541,35 +2049,32 @@ class Gui {
     scale(width/1600.0f);
 
     // PILOTS
-    refresh = true;
     checkPilots();
-    if (refresh) {
-      background(backgroundColor);
-      } else {
-      //if (debug) {
-      //  rectMode(CORNER);
-      //  noStroke();
-      //  fill(backgroundColor);
-      //  rect(0, 112, width, 120);
-      //  rect(0, (height/2)+194, width, 120);
-      //}
-    }
-    displayPilots();
+    background(backgroundColor);
 
+    //    if (refresh) {
+    //    } else {
+    //      //if (debug) {
+    //      //  rectMode(CORNER);
+    //      //  noStroke();
+    //      //  fill(backgroundColor);
+    //      //  rect(0, 112, width, 120);
+    //      //  rect(0, (height/2)+194, width, 120);
+    //      //}
+    //    }
+    displayPilots();
     // PACKETS
     if (debug) {
       displayPackets();
     }
     popMatrix();
-
     // DWEETS
     if (messaging != null && debug) {
       messaging.displayDweet(250, 630);
     }
-
-    if (android) {
-      refresh = false;
-    }
+    //if (android) {
+    //  refresh = false;
+    //}
   }
 
   public void displayPackets() {
@@ -1586,22 +2091,22 @@ class Gui {
 
 public void keyPressed() {
   switch (key) {
-    case '0':
+  case '0':
     activeObject = null;
     break;
-    case '1':
+  case '1':
     activeObject = ticker;
     break;
-    case '2':
+  case '2':
     activeObject = comment;
     break;
-    case '3':
+  case '3':
     activeObject = mailbox;
     break;
-    case '4':
+  case '4':
     activeObject = reel;
     break;
-    case '5':
+  case '5':
     activeObject = frame;
     break;
   }
@@ -1639,6 +2144,9 @@ class Packet {
       gui.packets.add(this);
     }
   }
+  
+  public void init() {
+  }
 
   public void display() {
     loc.x = attract(loc.x, targetLoc.x, .08f, 5);
@@ -1650,18 +2158,182 @@ class Packet {
     ellipse(loc.x, loc.y, 15, 15);
   }
 }
+public void deleteFile(String thisFileName) {
+  String fileName;
+  if (android) {
+    fileName = sketchPath("data\\tmp\\"+thisFileName);
+  } else {
+    fileName = sketchPath("data/tmp/"+thisFileName);
+  }
+  File f = new File(fileName);
+  if (f.exists()) {
+    f.delete();
+    println("deleted "+thisFileName);
+  } else {
+    println("could not delete "+thisFileName);
+  }
+}
+
+// String[] loadLocal(String thisFile) {
+//   String[] result = loadStrings((android ? "data\\tmp\\" : "data/tmp/") +thisFile);
+//   if (debug) println("loaded "+thisFile);
+//   return result;
+// }
+
+public void saveLocal(String thisFile, String[] thisContent) {
+  saveStrings((android ? "data\\tmp\\" : "data/tmp/") +thisFile, thisContent);
+  if (verbose) println("saved "+thisFile);
+}
+
+public void saveLocal(String thisFile, PImage img) {
+  if (img != null) {
+    PImage tmp = createImage(img.width, img.height, RGB);
+    tmp = img.get();
+    if (android) {
+      tmp.save(savePath(sketchPath("data\\tmp\\"+thisFile)));
+    } else {
+      tmp.save(savePath(sketchPath("data/tmp/"+thisFile)));
+    }
+  }
+  if (verbose) println("saved "+thisFile);
+}
+
+public PImage loadLocalImage(String thisFile) {
+  if (debug) { 
+    Packet newPacket = new Packet(false, "", getPilot("online").x);
+    newPacket.init();
+  }
+  PImage img = loadImage((android ? "data\\tmp\\" : "data/tmp/")+thisFile);
+  if (verbose) println("loaded "+thisFile);
+  return img;
+}
+
+public String[] loadUrl(String thisUrl) {
+  network.loading = true;
+  if (debug) { 
+    Packet newPacket = new Packet(true, "", getPilot("online").x);
+    newPacket.init();
+  }
+  if (verbose) println("loading "+thisUrl);  
+  network.pingStart = millis();
+  if (network.online) {
+    try { 
+      String[] content = loadStrings(thisUrl);
+      if (content != null) {
+        network.pingTime = PApplet.parseInt(millis() - network.pingStart);
+        if (verbose) println("loaded url "+network.pingTime+"ms");
+        if (debug) {
+          Packet newPacket = new Packet(false, "", getPilot("online").x);
+          newPacket.init();
+        }
+        //network.updated = false;
+        return content;
+      }
+    } 
+    catch (Exception e) {
+      if (verbose) println(e);
+    }
+  }
+  if (verbose) println("error, offline");
+  //network.updated = false;
+  network.loading = false;
+  return null;
+}
+
+public long getFileTimeStamp(String thisFolder, String thisFileName) {
+  String fileName;
+  if (android) {
+    fileName = dataPath("tmp\\"+thisFileName);
+  } else {
+    fileName = sketchPath("data/tmp/"+thisFileName);
+  }
+  File file = new File(fileName);
+  if (file.exists()) {  
+    long lastUpdated = file.lastModified();
+    if (verbose) println("getting time stamp "+fileName);
+    return lastUpdated;
+  } else {
+    if (verbose) println("could not get time stamp "+fileName);
+    return 0;
+  }
+}
+
+public String getEasyTimeStamp(long thisTime) {
+  float dif = PApplet.parseInt((time.currentTimeStamp - thisTime) / 1000);
+  float secondsPerMinute = 60;  
+  float secondsPerHour = secondsPerMinute * 60;
+  float secondsPerDay = secondsPerHour * 24;
+  float days = dif / secondsPerDay;
+  float hours = (days - (int)days) * secondsPerDay / secondsPerHour;
+  float minutes = (hours - (int)hours) * secondsPerHour / secondsPerMinute;
+  float seconds = (minutes - (int)minutes) * secondsPerMinute;
+  return (int)days+"d "+(int)hours+"h "+(int)minutes+"m "+(int)seconds+"s ago";
+}
+class Mailbox extends Teleobject {
+  Mailbox(PApplet _parent) {
+    parent = _parent;
+  }
+
+  public void init() {
+    comm = new Comm(parent);
+    display = new MailboxDisplay();
+    comm.portNumber = "1431";
+    comm.targetDeviceAddress = "D2:26:16:99:DF:A5";
+    comm.init();
+  }
+
+  public void printPages() {
+    switch(channel) {
+    case HELLO: 
+      pages.add(new Page("", REFRESH, 0, 0, 0, 0, 1));
+
+      String hello = "What's up"+ (google.loggedin ? " "+profile.givenName : "") +"?";
+      pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+      pages.add(new Page("", FONT, 5, 0, 0, 0, 1));
+      pages.add(new Page(hello, STRING, 0, 1, 1, 64+6, 1));
+      pages.add(new Page("", SERVO, 2, 5, 15, 0, 0));
+
+      break;
+
+    case BYE:
+      pages.add(new Page("", SERVO, 0, 0, 0, 0, 1));
+      pages.add(new Page("", BACKGROUND, 0, 0, 0, 0, 1));
+      pages.add(new Page("", BACKGROUND, 0, 0, 0, 0, 1));
+
+      pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
+      pages.add(new Page("", FONT, 5, 0, 0, 0, 1));
+      pages.add(new Page("zzz", STRING, 0, 1, 1, 64+6, 1 ));
+      break;
+
+    case CONTACTS:
+      break;
+
+
+    default:
+      String thisCommandName = "";
+      if (channel > 100 && getPilotByCommand(channel) != null) {
+        thisCommandName = getPilotByCommand(channel).name;
+      } else {
+        thisCommandName = "????";
+      }
+      pages.add(new Page("", SERVO, 2, 5, 15, 0, 0));
+      pages.add(new Page("", FONT, 5, 0, 0, 0, 0));
+      pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
+      pages.add(new Page(thisCommandName, STRING, 0, 1, 1, 64+6, 0));
+      break;
+    }
+  }
+}
 class MailboxDisplay extends Display {
   PShape outline, window, mask;
-
-
   int mode = 0;
   String data = "";
-
 
   long lastTick;
   int cursorX = 0;
   int breakX;
-  boolean busy;
+  boolean busy = true;
+
   int displayMode, tack, teck, tick, tock, tuck;
 
   int w = 128;
@@ -1672,7 +2344,6 @@ class MailboxDisplay extends Display {
   boolean gradient;
 
   int currentFont = 0;
-
 
   final int SYSTEM5x7 = 0;
   final int COM8x8 = 1;
@@ -1694,7 +2365,6 @@ class MailboxDisplay extends Display {
     window.disableStyle();
     mask = loadShape("shp/mask.svg");
     mask.disableStyle();
-
     foreground = whiteColor;
     background = redColor;
     top = 0;
@@ -1711,12 +2381,10 @@ class MailboxDisplay extends Display {
 
   public void display() {
     pushMatrix();
-
     scale(.63f);
     fill(255);
     stroke(0);
-    strokeWeight(thick/.7f);
-
+    strokeWeight(thickStroke);
     shape(outline, 0, 0);
     pushMatrix();
     scale(.85f);
@@ -1727,28 +2395,15 @@ class MailboxDisplay extends Display {
     shape(mask, 0, 60);
     noFill();
     stroke(0);
-    strokeWeight(thick/.7f);
+    strokeWeight(thickStroke);
     shape(window, 0, 60);
     popMatrix();
   }
 
   public void printString(String thisString, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
+    busy = true;
   }
 }
-final int SCAN = -10;
-final int LOGOUT = -11;
-final int PLAY = -12;
-final int UP = -13;
-final int DOWN = -14;
-final int LEFT = -15;
-final int RIGHT = -16;
-final int LOOP = -27;
-final int JUMP = -18;
-final int DEMO = -19;
-final int SYNC = -20;
-final int OBJECT = -21;
-final int MOBILE = -22;
-
 final int BLANK = 1;
 final int CENTERED = 2;
 final int INSTANT = 3;
@@ -1797,25 +2452,43 @@ final int COPY_GRADIENT = 75;
 final int REFRESH = 76;
 final int FONT = 77;
 
-final int SETTINGS = 100;
-final int BLUETOOTH = 101;
-final int WIFI = 102;
-final int ONLINE = 103;
-final int ENERGY = 104;
-final int ORIENTATION = 105;
-final int TIME = 106;
-final int EQ = 107;
-final int LOCATION = 108;
-final int NAVIGATION = 109;
-final int RESULTS = 110;
-final int DIM = 111;
-final int HELLO = 150;
-final int BYE = 151;
-final int SEARCH = 152;
+// channels
 
 int demoModes[] = {LOOK, ALPHABET, BALL, RAIN, SNOW, COMPASS, RANDOM};
 int demoMode = 0;
 
+final int SCAN = -10;
+final int LOGOUT = -11;
+final int PLAY = -12;
+final int UP = -13;
+final int DOWN = -14;
+final int LEFT = -15;
+final int RIGHT = -16;
+final int LOOP = -27;
+final int JUMP = -18;
+final int DEMO = -19;
+final int SYNC = -20;
+final int OBJECT = -21;
+//final int MOBILE = -22;
+
+final int SETTINGS = 100;
+final int WIFI = 101;
+final int MOBILE = 102;
+final int ONLINE = 103;
+final int BLUETOOTH = 104;
+final int DIM = 105;
+final int ENERGY = 106;
+final int ORIENTATION = 107;
+final int TIME = 108;
+final int EQ = 109;
+final int LOCATION = 110;
+final int NAVIGATION = 111;
+final int RESULTS = 112;
+
+
+final int HELLO = 150;
+final int BYE = 151;
+final int SEARCH = 152;
 final int GOOGLE = 200;
 final int CONTACTS = 201;
 final int MAIL = 202;
@@ -1838,13 +2511,13 @@ class Manager {
 
   Manager () {
     String[] commandList = loadStrings("tsv/commands.txt");
-    for (int i=0;i<commandList.length; i++) {
+    for (int i=0; i<commandList.length; i++) {
       String thisLine = commandList[i];
       if (thisLine.length() > 0) {
-        String[] items = splitTokens(thisLine," ");
+        String[] items = splitTokens(thisLine, " ");
         if (items.length == 5) {
           String thisCommand = items[2];
-          int thisCommandNum = parseInt(items[4].substring(0,items[4].length()-1));
+          int thisCommandNum = parseInt(items[4].substring(0, items[4].length()-1));
         }
       }
     }
@@ -1856,126 +2529,124 @@ class Manager {
   public void setChannel(int thisCommand) {
 
     switch(thisCommand) {
-      case UP:
-      // loadUrlThread("http://www.google.com");
+    case UP:
       // if (channel == NAVIGATION) {
       //   places.search(ticker.pages.get(ticker.pageIndex).content);
       //   thisCommand = RESULTS;
       // }
       break;
 
-      case DOWN:
+    case DOWN:
       // if (channel == RESULTS) {
       //   thisCommand = NAVIGATION;
       // }
-      ticker.writeString("loading content", LOADING, 1, 1, 100, 0, 0);
       break;
 
-      case RIGHT:
+    case RIGHT:
       for (Teleobject teleobject : teleobjects) {
         teleobject.nextPage();
       }
       break;
 
-      case LEFT:
+    case LEFT:
       for (Teleobject teleobject : teleobjects) {
         teleobject.previousPage();
       }
       break;
 
-      case LOGOUT:
-      google.logout();
-      break;
-
-      case SCAN:
-      scanDevices();
-      break;
-
-      case SYNC:
-      sync = !sync;
-      break;
-
-      case LOOP:
-      loop = !loop;
-      break;
-
-      case PLAY:  
-      play = !play;
-      break;
-
-      case SETTINGS:
+    case SETTINGS:
       debug = !debug;
       break;
 
-      case MOBILE:
+    case MOBILE:
+      network.update();
+      break;
+
+    case WIFI:
+      network.update();
+      break;
+
+    case ONLINE:
+      network.update();
+      break;
+
+    case BLUETOOTH:
+      bluetooth.scanDevices();
+      break;
+
+    case LOGOUT:
+      google.logout();
+      break;
+
+    case SYNC:
+      sync = !sync;
+      break;
+
+    case LOOP:
+      loop = !loop;
+      break;
+
+    case PLAY:  
+      play = !play;
+      break;
+
+    case OBJECT:
       if (activeObject == null) {
         activeObject = ticker;
-      } 
-      else {
+      } else {
         int nextObject = teleobjects.indexOf(activeObject);
         nextObject ++;
-        if (nextObject > 4)        {
-          activeObject = null;
-        } 
-        else {
+        if (nextObject == teleobjects.size()) {
+          activeObject = null ;
+        } else {
           activeObject = teleobjects.get(nextObject);
         }
       }
       break;
 
-      case LOCATION:
+    case LOCATION:
       geolocation.update();
       break;
 
-      case WEATHER:
+    case WEATHER:
       weather.update();
       break;
 
-      case GOOGLE:
+    case GOOGLE:
       if (!google.loggedin) {
         google.login();
         if (google.authenticating) play = false;
-      } 
-      else {
+      } else {
         play = true;
       }
       break;
 
-      case CONTACTS:
+    case CONTACTS:
       if (!contacts.updated) contacts.update();
       break;
 
-      case MAIL:
+    case MAIL:
       if (!mail.updated) mail.update();
       break;
 
-      case CALENDAR:
+    case CALENDAR:
       if (!calendar.updated) calendar.update();
       break;
 
-      case TWITTER:
+    case TWITTER:
       if (twitter.loggedin) {
         twitter.update();
-      } 
-      else {
+      } else {
         twitter.login();
         twitter.update();
       }
       break;
 
-      case WIFI:
-      network.updateWifi();
-      break;
-
-      case ONLINE:
-      network.updateOnline();
-      break;
-
-      case NEWS:
+    case NEWS:
       if (!news.updated) news.update();
       break;
 
-      case DRIVE:
+    case DRIVE:
       if (!drive.updated || true) drive.update(); // to test...
       break;
     }
@@ -1989,8 +2660,6 @@ class Manager {
     //   }
     // }
 
-    if (channel == EQ) activeObject.comm.busy = false;
-
     if (thisCommand > 100) {
       channel = thisCommand;
       if (activeObject == null) {
@@ -1998,19 +2667,21 @@ class Manager {
           teleobject.initPages(channel);
           teleobject.printPages();
           teleobject.pageDelay = 0;
+          teleobject.ready = true;
+          teleobject.display.busy = false;
+          teleobject.comm.busy = false;
         }
-      } 
-      else {
-       activeObject.initPages(channel);
-       activeObject.printPages();
-       activeObject.pageDelay = 0;
-       activeObject.ready = true;
-       activeObject.display.busy = false;
-       activeObject.comm.busy = false;
-     }
-   }
-   gui.refresh = true;
- }
+      } else {
+        activeObject.initPages(channel);
+        activeObject.printPages();
+        activeObject.pageDelay = 0;
+        activeObject.ready = true;
+        activeObject.display.busy = false;
+        activeObject.comm.busy = false;
+      }
+    }
+    gui.refresh = true;
+  }
 }
 
 class Messaging {
@@ -2157,236 +2828,168 @@ class Messaging {
     }
   }
 }
- 
- 
 
-class Network {
-  String hostName; 
-  String hostIP; 
-  String externalIP;
 
-  // String pingUrl = "http://www.google.com";
-  String ipFinderUrl = "https://api.ipify.org";
 
-  // STATES
-  String wifiState;   
-  String onlineState;
-  boolean wifi, online, loading;
-  int pingTime;
-  long pingStart;
 
-  Network () {
-    init();
-  }
 
-  public void init() {
-    updateWifi();
-    if (wifi) {
-      updateOnline();
-    } 
-    else {
-      onlineState ="offline";
-      online = false;
-    }
-  }
 
-  public void updateOnline() {
-    pingStart = millis();  
-    try { 
-      String[] ip = loadStrings(ipFinderUrl);
-      if (ip != null) {
-        pingTime = PApplet.parseInt(millis() - pingStart);
-        externalIP = ip[0];
-        onlineState ="online";
-        online = true;
-      } 
-      else {
-        onlineState ="offline";
-        online = false;
-      }
-    } 
-    catch (Exception e) {
-      println(e);
-      online = false;
-      onlineState ="offline";
-    }
-  }
 
-  public void updateWifi() {
-    try { 
-      InetAddress addr = InetAddress.getLocalHost(); 
-      println(addr);
-      byte[] ipAddr = addr.getAddress(); 
-      String raw_addr = addr.toString(); 
-      String[] list = split(raw_addr, '/'); 
-      hostIP = list[1]; 
-      hostName = addr.getHostName();
-      if (hostIP.indexOf(":") != -1 || hostIP.equals("127.0.0.1")) {
-        wifiState = "wifi disabled";
-        wifi = false;
-      } 
-      else {  
-        wifiState = "wifi enabled";
-        wifi = true;
-      }
-    } 
-    catch (UnknownHostException e) {
-      println(e);
-    }
-  }
+
+
+/////////////////
+// PLACE HOLDERS
+/////////////////
+
+// void downloadByteArrayAsImage(String url, String fileName) {
+// 	println("downloading file array");
+// 	byte[] imageInByte = loadBytes(url);
+// 	InputStream in = new ByteArrayInputStream(imageInByte);  
+// 	try {
+// 		BufferedImage bImageFromConvert = ImageIO.read(in);
+// 		ImageIO.write(bImageFromConvert, "png", new File(
+// 			sketchPath("data/tmp/"+fileName+".png")));
+// 		println("downloaded byte array "+fileName);
+// 	} 
+// 	catch(Exception e) {
+// 		println("error");
+// 	}
+// }
+
+class Keyboard {
+	PApplet parent;
+
+	Keyboard(PApplet _parent) {
+		parent = _parent;
+	}
 }
 
-public void deleteFile(String thisFile) {
-  String fileName;
-  if (android) {
-    fileName = sketchPath("data\\tmp\\"+thisFile);
-  } 
-  else {
-    fileName = dataPath("tmp/"+thisFile);
-  }
-  File f = new File(fileName);
-  if (f.exists()) {
-    f.delete();
-    println("deleted "+thisFile);
-  } 
-  else {
-    println("could not delete "+thisFile);
-  }
+class Bluetooth{
+	boolean available;
+	PApplet parent;
+
+	Bluetooth(PApplet _parent) {
+		parent = _parent;
+	}
+
+	public void update() {
+
+	}
+
+	public void scanDevices() {
+	} 
 }
 
-public String[] loadLocal(String thisFile) {
-  String[] result = loadStrings((android ? "data\\tmp\\" : "data/tmp/") +thisFile);
-  if (debug) println("loaded "+thisFile);
-  return result;
-}
+class Sensors {
+	PApplet parent;
 
-public void saveLocal(String thisFile, String[] thisContent) {
-  saveStrings((android ? "data\\tmp\\" : "data/tmp/") +thisFile, thisContent);
-  if (debug) println("saved "+thisFile);
-}
+	Sensors(PApplet _parent) {
+		parent = _parent;
+		init();	
+	}
 
-public void saveLocal(String thisFile, PImage img) {
-  if (img != null) {
-    PImage tmp = createImage(img.width, img.height, RGB);
-    tmp = img.get();
-    if (android) {
-      tmp.save(savePath(sketchPath("data\\tmp\\"+thisFile)));
-      } else {
-        tmp.save(savePath(sketchPath("data/tmp/"+thisFile)));
-      }
-    }
-    if (debug) println("saved "+thisFile);
-  }
+	public void init() {
+		if (network.externalIP == null) {
+			geolocation.latitude = 28.659363f; 
+			geolocation.longitude = -17.913001f;
+			geolocation.provider = "fixed";
+			geolocation.located = true;
+		} 
+		else  {
+			String url = "http://www.geoplugin.net/json.gp?ip="+network.externalIP;
+			String[] geopluginContent = loadUrl(url);
+			if (geopluginContent != null) {
+				saveStrings("tmp/geolocation.json", geopluginContent);
+				String jsonFragment = "";
+				for (int i=0; i<geopluginContent.length; i++) {
+					jsonFragment += geopluginContent[i];
+				}
+				processing.data.JSONObject geolocatedData = processing.data.JSONObject.parse(jsonFragment);
+				geolocation.latitude = geolocatedData.getFloat("geoplugin_latitude");
+				geolocation.longitude = geolocatedData.getFloat("geoplugin_longitude");
+				geolocation.provider = "geoplugin";
+				geolocation.located = true;
+			}			
+		}
+	}
 
-  public PImage loadLocalImage(String thisFile) {
-    if (debug) { 
-      Packet newPacket = new Packet(false, "", getPilot("online").x);
-    }
-    PImage img = loadImage((android ? "data\\tmp\\" : "data/tmp/")+thisFile);
-    if (debug) println("loaded "+thisFile);
-    return img;
-  }
-
-  public String[] loadUrl(String thisUrl) {
-    network.loading = true;
-    if (debug) { 
-      Packet newPacket = new Packet(true, "", getPilot("online").x);
-    }
-    if (debug) println("loading "+thisUrl);  
-    network.pingStart = millis();
-    if (network.online) {
-      try { 
-        String[] content = loadStrings(thisUrl);
-        if (content != null) {
-          network.pingTime = PApplet.parseInt(millis() - network.pingStart);
-          if (debug) println("loaded url "+network.pingTime+"ms");
-          if (debug) {
-            Packet newPacket = new Packet(false, "", getPilot("online").x);
-          }
-          network.loading = false;
-          return content;
-        }
-      } 
-      catch (Exception e) {
-        if (debug) println(e);
-      }
-    }
-    if (debug) println("error, offline");
-    network.loading = false;
-    return null;
-  }
-
-  String urlThread;
-  String[] contentThread;
+	public void update() {
 
 
-  public void loadUrlThread(String thisUrl) {
-    urlThread = thisUrl;
-    contentThread = null;
-    thread("startLoadUrlThread");
-    network.pingStart = millis();
-  }
-
-  public void updateThread() {
-  // if (contentThread != null) {  
-  //   println(contentThread);
-  // }
+	}
 }
 
 
-public void startLoadUrlThread() {
-  network.loading = true;
-  if (debug) { 
-    Packet newPacket = new Packet(true, "", getPilot("online").x);
-  }
-  if (debug) println("loading in thread "+urlThread);  
-  if (network.online) {
-    try { 
-      String[] contentThread = loadStrings(urlThread);
-      if (contentThread != null) {
-        network.pingTime = PApplet.parseInt(millis() - network.pingStart);
-        if (debug) println("loaded url in thread in "+network.pingTime+"ms");
-        if (debug) {
-          Packet newPacket = new Packet(false, "", getPilot("online").x);
-        }
-      }
-    } 
-    catch (Exception e) {
-      if (debug) println(e);
-    }
-    } else {
-      if (debug) println("error, offline");
-    }
-    network.loading = false;
-  }
 
+/////////////////
+// MIC
+/////////////////
 
-//String fileName = "weather.json";
-//File file = new File(fileName);
-//if (file!= null) {
-//  weatherUpdated = file.lastModified();
-//  //if ((currentTimeStamp - weatherUpdated)/1000 < weatherRefresh || !online) {
-//  weatherContent = loadStrings(fileName);
-//  //weatherUpdated = currentTimeStamp;
-//  println("loading local file "+fileName);
-//  //}
-//}
+class Eq {
+	Minim minim;
+	AudioInput in;
 
+	char[] eqData;
+	float[] eqVal;
+	int res = 32;
+	String eqStr;
 
+	float maxL = .03f;
+	float midL = .02f;
+	float minL = .01f;
 
+	float rightL;
+	float leftL;
+	float eqFilter = .1f;
 
+	String str;
 
+	Eq (PApplet parent) {
+		minim = new Minim(parent);
+		in = minim.getLineIn(minim.STEREO, res);
+		eqData = new char[res];
+		eqVal = new float[res];
+	}
 
-
-
+	public void update()
+	{
+		rightL = in.right.level();
+		leftL = in.left.level();
+		eqStr = "";
+		for (int i = 0; i < in.bufferSize(); i++) {
+			float targetLevel = abs(in.left.get(i));
+			eqVal[i] += (targetLevel-eqVal[i])*eqFilter;
+			if ( eqVal[i] > maxL) {
+				eqData[i] = 3;
+			} 
+			else if ( eqVal[i] > midL &&  eqVal[i] < maxL) {
+				eqData[i] = 2;
+			} 
+			else if ( eqVal[i] >  minL &&  eqVal[i] < midL) {
+				eqData[i] = 1;
+			} 
+			else {
+				eqData[i] = 0;
+			}
+			eqStr += eqData[i];
+		}
+	}
+}
+// //    if ( in.isMonitoring() )
+// //    {
+// //      in.disableMonitoring();
+// //    }
+// //    else
+// //    {
+// //      in.enableMonitoring();
+// //    }
 
 
 class Comm {
 	PApplet parent;
 	Serial port;
 	String portNumber;
-
-	boolean usb, bluetooth, connecting, connected, busy;
+	boolean connecting, connected, found, paired, discovering, discovered, acknowledged, busy;
 	String portName = "";
 	String targetDeviceAddress = "";
 	long lastTx, lastRx;
@@ -2424,7 +3027,7 @@ class Comm {
 
 	// final int BLE_PACKET_LENGHT=18;
 	// final int TX_SPEED = 200;
-
+	int timeOuts = 0;
 	int txDelay;
 
 	Comm(PApplet _parent) {
@@ -2432,7 +3035,6 @@ class Comm {
 	}
 
 	public void init() {
-		usb = true;
 		for (int i=0; i<Serial.list().length; i++) {
 			if (Serial.list()[i].indexOf(portNumber) != -1) {
 				portName = Serial.list()[i];   
@@ -2440,6 +3042,8 @@ class Comm {
 					port = new Serial(parent, portName, 115200);
 					connecting = true;
 					connected = true;
+					discovered = true;
+					acknowledged = true;
 					connectionTime = millis();
 					println("connected to "+portName);
 					break;
@@ -2492,22 +3096,20 @@ class Comm {
 
 	public void writeString(String thisString, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
 		// txDelay = 0;
-
-		byte[] data = new byte[thisString.length()+headerLength+1];
-		data[0] = (byte)(thisMode+48);
-		data[1] = (byte)(tack+48);
-		data[2] = (byte)(teck+48);
-		data[3] = (byte)(tick+48);
-		data[4] = (byte)(tock+48);
-		data[5] = (byte)(tuck+48);
-		for (int i=0; i < thisString.length(); i++) {  
-			data[i+headerLength] = (byte)thisString.charAt(i);
-		}
-		data [data.length-1] = (byte)'\n';
-		tx(data);
-		busy = true;
-		if (debug) {
-			println(thisMode+"|"+tack+"|"+teck+"|"+tick+"|"+tock+"|"+tuck+"|"+thisString);
+		if (connected) {
+			byte[] data = new byte[thisString.length()+headerLength+1];
+			data[0] = (byte)(thisMode+48);
+			data[1] = (byte)(tack+48);
+			data[2] = (byte)(teck+48);
+			data[3] = (byte)(tick+48);
+			data[4] = (byte)(tock+48);
+			data[5] = (byte)(tuck+48);
+			for (int i=0; i < thisString.length(); i++) {  
+				data[i+headerLength] = (byte)thisString.charAt(i);
+			}
+			data [data.length-1] = (byte)'\n';
+			tx(data);
+			busy = true;
 		}
 	}
 
@@ -2524,96 +3126,96 @@ class Comm {
 		}
 	}
 }
+class Network {
+	String hostName; 
+	String hostIP; 
+	String externalIP;
 
-/////////////////
-// PLACE HOLDERS
-/////////////////
+	String ipFinderUrl = "https://api.ipify.org";
 
-// void downloadByteArrayAsImage(String url, String fileName) {
-// 	println("downloading file array");
-// 	byte[] imageInByte = loadBytes(url);
-// 	InputStream in = new ByteArrayInputStream(imageInByte);  
-// 	try {
-// 		BufferedImage bImageFromConvert = ImageIO.read(in);
-// 		ImageIO.write(bImageFromConvert, "png", new File(
-// 			sketchPath("data/tmp/"+fileName+".png")));
-// 		println("downloaded byte array "+fileName);
-// 	} 
-// 	catch(Exception e) {
-// 		println("error");
-// 	}
-// }
+	String type;
+	String state;
+	String reason;
+	String extra;
+	boolean roaming;
+	boolean available;
+	boolean networked, router, wifi, online, pinging, loading;
 
-public void updateSensors() {
-}
+	String connectionTime;
 
-public void scanDevices() {
-}    
+	int pingTime;
+	long pingStart;
 
-/////////////////
-// MIC
-/////////////////
-
-class Eq {
-	Minim minim;
-	AudioInput in;
-
-	char[] eqData;
-	float[] eqVal;
-	int res = 32;
-	String eqStr;
-
-	float maxL = .03f;
-	float midL = .02f;
-	float minL = .01f;
-
-	float rightL;
-	float leftL;
-	float eqFilter = .1f;
-
-	String str;
-
-	Eq (PApplet parent) {
-		minim = new Minim(parent);
-		in = minim.getLineIn(minim.STEREO, res);
-		eqData = new char[res];
-		eqVal = new float[res];
+	Network () {
+		update();
 	}
 
-	public void update()
-	{
-		rightL = in.right.level();
-		leftL = in.left.level();
-		eqStr = "";
-		for (int i = 0; i < in.bufferSize(); i++) {
-			float targetLevel =  abs(in.left.get(i));
-			eqVal[i] += (targetLevel-eqVal[i])*eqFilter;
-			if ( eqVal[i] > maxL) {
-				eqData[i] = 3;
-			} 
-			else if ( eqVal[i] > midL &&  eqVal[i] < maxL) {
-				eqData[i] = 2;
-			} 
-			else if ( eqVal[i] >  minL &&  eqVal[i] < midL) {
-				eqData[i] = 1;
+	public void update() {
+		try { 
+			InetAddress addr = InetAddress.getLocalHost(); 
+			byte[] ipAddr = addr.getAddress(); 
+			String raw_addr = addr.toString(); 
+			String[] list = split(raw_addr, '/'); 
+			hostIP = list[1]; 
+			hostName = addr.getHostName();
+			if (hostIP.indexOf(":") != -1 || hostIP.contains("127.0.0.1")) {
+				wifi = false;
+				router = false;
+				networked = false;
 			} 
 			else {
-				eqData[i] = 0;
+				wifi = true;
+				router = true;
+				networked = true;
 			}
-      // line(0, -offset + in.left.get(i)*offset, eqWidth, -offset + in.left.get(i)*offset);
-      // translate(eqWidth, 0);
-      eqStr += eqData[i];
-    }
-  }
+		} 
+		catch (UnknownHostException e) {
+			if (verbose) println(e);
+		}
+		if (!online && !pinging) {
+			thread("ping");
+		}
+	}
+
+	public void getExternalIP() {
+		String[] ip = loadStrings(ipFinderUrl);
+		if (ip != null) {
+			pingTime = PApplet.parseInt(millis() - pingStart);
+			externalIP = ip[0];
+		}
+	}
 }
-// //    if ( in.isMonitoring() )
-// //    {
-// //      in.disableMonitoring();
-// //    }
-// //    else
-// //    {
-// //      in.enableMonitoring();
-// //    }
+
+public void ping() {
+	network.pinging = true;
+	network.pingStart = millis();
+	if (debug) { 
+		Packet newPacket = new Packet(true, "", getPilot("online").x);
+		newPacket.init();
+	}
+	if (verbose) println("ping http://www.google.com");  
+	try { 
+		String[] contentThread = loadStrings("http://www.google.com");
+		if (contentThread != null) {
+			network.pingTime = PApplet.parseInt(millis() - network.pingStart);
+			if (debug) {
+				if (verbose) println("ping google in "+network.pingTime+"ms");
+				Packet newPacket = new Packet(false, "", getPilot("online").x);
+				newPacket.init();
+				network.online = true;
+			}
+			} else {
+				if (verbose) println("unable to reach google");
+				network.online = false;
+			}
+		} 
+		catch (Exception e) {
+			if (verbose) println(e);
+			network.online = false;
+			if (verbose) println("unable to reach google");
+		}
+		network.pinging = false;
+	}
 ArrayList<Pilot> pilots; 
 
 public void initPilots() {
@@ -2632,7 +3234,7 @@ public void initPilots() {
     TableRow row = pilotTable.getRow(i);
     Pilot thisPilot = new Pilot(row.getString("name"), row.getString("shape"), row.getInt("command"));
     thisPilot.x = 80+(130*i);
-    thisPilot.y = 600;
+    thisPilot.y = android ? 700 : height - 100;
     pilots.add(thisPilot);
   }
 
@@ -2641,60 +3243,71 @@ public void initPilots() {
     TableRow row = pilotTable.getRow(i);
     Pilot thisPilot = new Pilot(row.getString("name"), row.getString("shape"), row.getInt("command"));
     thisPilot.x = 80+(130*i);
-    thisPilot.y = 700;
+    thisPilot.y = android ? 820 : height;
     pilots.add(thisPilot);
   }
 }
 
 public void displayPilots() {
   String bluetoothInfo = "";
-  boolean bluetoothOn = false;
+
   for (Teleobject teleobject : teleobjects) {
     if (teleobject.comm != null) {
-      if (teleobject.comm.connected) {
+      if (android) {
+        bluetoothInfo += (teleobject.comm.found ? teleobject.comm.portName : teleobject.name + " not found") + "\n";
+        bluetoothInfo += (teleobject.comm.paired ? "P" : "p" );
+        bluetoothInfo += (teleobject.comm.discovering ? "D" : "d");
+        bluetoothInfo += (teleobject.comm.discovered ? "S" : "s");
+        bluetoothInfo += (teleobject.comm.connected ? "C" : "c");
+        bluetoothInfo += (teleobject.comm.acknowledged ? "A" : "a");
+        bluetoothInfo += (teleobject.comm.busy ? "B" : "b") + "\n";
+        //bluetoothInfo += teleobject.comm.timeOuts + " timeouts";
+      } else {
         bluetoothInfo += teleobject.comm.portName+"\n";
-        bluetoothOn  = true;
-        } else {
-          bluetoothInfo += "not connected\n";
-        }
+        // bluetoothInfo += (teleobject.comm.acknowledged ? "acknowledged" : "not acknowledged") + "\n";
       }
     }
+  }
 
-    String energyInfo = "";
-    for (Teleobject teleobject : teleobjects) {
-      if (teleobject.comm != null) {
-        energyInfo += teleobject.comm.battery+"v "+(teleobject.comm.charging ? "c" : "b")+"\n";
-      }
+  String energyInfo = "";
+  for (Teleobject teleobject : teleobjects) {
+    if (teleobject.comm != null) {
+      energyInfo += teleobject.comm.battery+"v "+(teleobject.comm.charging ? "c" : "b")+"\n";
     }
+  }
 
-    String currentChannelName = "null";
+  String currentChannelName = "null";
 
-    Pilot currentPilot = getPilotByCommand(manager.channel);
-    if (currentPilot != null) currentChannelName = currentPilot.name.toUpperCase();
-    setPilot("play", manager.play);
+  Pilot currentPilot = getPilotByCommand(manager.channel);
+  if (currentPilot != null) currentChannelName = currentPilot.name.toUpperCase();
+  setPilot("play", manager.play);
 
   // TOP
 
   setPilot("settings", debug);
-  setPilot("settings", width + "x" + height + "px\n" + (retina ? "retina" : "non-retina") + "\n" + (int)frameRate +" fps\n");
+  setPilot("settings", width + "x" + height + "px\n" + (retina ? "retina" : "non-retina") + "\n" + (int)frameRate +" fps\n" + currentChannelName);
 
-  setPilot("bluetooth", bluetoothOn);
+  setPilot("bluetooth", bluetooth.available);
   setPilot("bluetooth", bluetoothInfo);
 
   setPilot("wifi", network.wifi); 
-  setPilot("wifi", network.wifiState+"\n"+network.hostIP+"\n"+network.hostName);
+  setPilot("wifi", (network.wifi ? "wifi enabled" : "wifi disabled") + "\n" + network.hostIP + "\n" + network.hostName+"\n" + (network.router ? "connected to WLAN" : "no WLAN" ));
+
+  setPilot("mobile", network.type + "\n" + network.state + "\n" + network.reason + "\n" + network.extra + "\n" + (network.roaming ? " roaming" : "not roaming") 
+    + "\n");
+  setPilot("mobile", network.networked); 
 
   setPilot("online", network.online);
-  setPilot("online", network.onlineState + "\n" + (network.online ? network.externalIP+"\n"+network.pingTime+"ms" : ""));
+  setPilot("online", (network.online ? "online" : "offline") + "\n" + (network.online ? network.externalIP+"\n"+network.pingTime+"ms" : ""));
 
-  setPilot("energy", manager.channel==ENERGY);
+  setPilot("energy", manager.channel == ENERGY);
   setPilot("energy", energyInfo);
 
-  setPilot("orientation", manager.channel==ORIENTATION);
+  setPilot("orientation", manager.channel == ORIENTATION);
   setPilot("orientation", "R "+(ticker.comm.ax>=0?"+":"")+PApplet.parseInt(ticker.comm.ax)+"\n"+"P "+(ticker.comm.ay>=0?"+":"")+PApplet.parseInt(ticker.comm.ay)+"\n"+"H "+(ticker.comm.az>=0?"+":"")+PApplet.parseInt(ticker.comm.az));
 
-  setPilot("time", manager.channel==TIME);
-  setPilot("time", getStringTime(true,":")+"\n"+getStringDate("/"));
+  setPilot("time", manager.channel == TIME);
+  setPilot("time", getStringTime(true, ":")+"\n"+getStringDate("/"));
 
   setPilot("sync", sync);
 
@@ -2723,8 +3336,7 @@ public void displayPilots() {
     setPilot("google", profile.givenName+" "+ profile.familyName+"\n"+profile.email+"\n"+profile.id+"\n"+profile.kind+"\n"+profile.minAge+"\n"+profile.language);
     if (profile.img != null && google.loggedin) {
       setPilot("google", profile.img);
-    } 
-    else {
+    } else {
       getPilot("google").img = null;
     }
   }
@@ -2738,7 +3350,7 @@ public void displayPilots() {
   setPilot("calendar", calendar.eventList.size()+" events");
 
   setPilot("youtube", manager.channel==YOUTUBE);
-  
+
   setPilot("drive", manager.channel==DRIVE);
 
   setPilot("twitter", manager.channel==TWITTER);
@@ -2752,6 +3364,7 @@ public void displayPilots() {
   setPilot("foursquare", manager.channel==FOURSQUARE);
 
   setPilot("news", manager.channel==NEWS);
+  setPilot("news", getEasyTimeStamp(news.lastUpdated));
 
   setPilot("weather", manager.channel==WEATHER);
   setPilot("weather", weather.conditionMain+", "+(time.currentTimeStamp-weather.lastUpdated)/1000+"s"+"\n"+nf(metric ? getCelcius(weather.temp) : weather.temp, 0, 1) + (metric ? "\u00b0C" : PApplet.parseChar(29)+"\u00b0F")+"\n"+PApplet.parseInt(weather.humidity)+"% humidity"+"\n"+
@@ -2767,6 +3380,7 @@ public void displayPilots() {
     thisPilot.display();
   }
 }
+
 
 public void checkPilots() {
   for (Pilot thisPilot : pilots) {
@@ -2811,8 +3425,7 @@ class Pilot {
         noStroke();
         fill(backgroundColor);
         shape(mask, 0, 0);
-      } 
-      else {
+      } else {
         noFill();
         stroke(state ? redColor : 255);
         strokeWeight(2);
@@ -2823,7 +3436,7 @@ class Pilot {
       stroke(state ? redColor : whiteColor);
       shape(app, 0, 0);
     }
-    if (label!=null && (debug || (name.equals("bluetooth") && activeObject == null))) { 
+    if (label!=null && (debug || ((name.equals("bluetooth") || name.equals("settings")) && activeObject == null))) { 
       fill(50);
       textAlign(CENTER);
       int fontSize = android ? 20 : 16;
@@ -2845,59 +3458,59 @@ class Pilot {
   }
 }
 
-  // void setPilotRotation(String thisPilot, boolean thisRotation) {
-  //   for (Pilot pilot : pilots) {
-  //     if (pilot.name.equals(thisPilot)) {
-  //       pilot.rotating = thisRotation;
-  //       break;
-  //     }
-  //   }
-  // }
+// void setPilotRotation(String thisPilot, boolean thisRotation) {
+//   for (Pilot pilot : pilots) {
+//     if (pilot.name.equals(thisPilot)) {
+//       pilot.rotating = thisRotation;
+//       break;
+//     }
+//   }
+// }
 
-  public Pilot getPilot(String thisPilot) {
-    for (Pilot pilot : pilots) {
-      if (pilot.name.equals(thisPilot)) {
-        return pilot;
-      }
-    }
-    return null;
-  }
-
-  public Pilot getPilotByCommand(int thisCommand) {
-    for (Pilot pilot : pilots) {
-      if (pilot.command == thisCommand) {
-        return pilot;
-      }
-    }
-    return null;
-  }
-
-  public void setPilot(String thisPilot, boolean thisState) {
-    for (Pilot pilot : pilots) {
-      if (pilot.name.equals(thisPilot)) {
-        pilot.state = thisState;
-        break;
-      }
+public Pilot getPilot(String thisPilot) {
+  for (Pilot pilot : pilots) {
+    if (pilot.name.equals(thisPilot)) {
+      return pilot;
     }
   }
+  return null;
+}
 
-  public void setPilot(String thisPilot, String thisLabel) {
-    for (Pilot pilot : pilots) {
-      if (pilot.name.equals(thisPilot)) {
-        pilot.label = thisLabel;
-        break;
-      }
+public Pilot getPilotByCommand(int thisCommand) {
+  for (Pilot pilot : pilots) {
+    if (pilot.command == thisCommand) {
+      return pilot;
     }
   }
+  return null;
+}
 
-  public void setPilot(String thisPilot, PImage img) {
-    for (Pilot pilot : pilots) {
-      if (pilot.name.equals(thisPilot)) {
-        pilot.img = img;
-        break;
-      }
+public void setPilot(String thisPilot, boolean thisState) {
+  for (Pilot pilot : pilots) {
+    if (pilot.name.equals(thisPilot)) {
+      pilot.state = thisState;
+      break;
     }
   }
+}
+
+public void setPilot(String thisPilot, String thisLabel) {
+  for (Pilot pilot : pilots) {
+    if (pilot.name.equals(thisPilot)) {
+      pilot.label = thisLabel;
+      break;
+    }
+  }
+}
+
+public void setPilot(String thisPilot, PImage img) {
+  for (Pilot pilot : pilots) {
+    if (pilot.name.equals(thisPilot)) {
+      pilot.img = img;
+      break;
+    }
+  }
+}
 class ReelDisplay extends Display {
   PShape outline, wheel, wheel_mask;
 
@@ -2943,9 +3556,8 @@ class ReelDisplay extends Display {
   public void display() {
     fill(255);
     stroke(0);
-    strokeWeight(thick);
+    strokeWeight(thickStroke);
     shape(outline, 0, 0);
-
     pushMatrix();
     translate(offsetX/2, 0);
     translate(-offsetX * dotNum /2, 36);
@@ -2964,7 +3576,7 @@ class ReelDisplay extends Display {
     shape(wheel_mask, 0, 0);
     noFill();
     stroke(0);
-    strokeWeight(thick);
+    strokeWeight(thickStroke);
     shape(wheel, 0, 0);
 
     popMatrix();
@@ -2977,7 +3589,7 @@ class ReelDisplay extends Display {
     shape(wheel_mask, 0, 0);
     noFill();
     stroke(0);
-    strokeWeight(thick);
+    strokeWeight(thickStroke);
     shape(wheel, 0, 0);    popMatrix();
   }
 
@@ -2990,7 +3602,6 @@ class ReelDisplay extends Display {
     }
   }
 }
-
 /////////////////////////////////////
 // PLACES
 /////////////////////////////////////
@@ -3013,9 +3624,9 @@ class Places {
   }
 
   public void search(String str) {
-   types = placeList.get(ticker.pageIndex);
-   int radius = 500;
-   results = new ArrayList<String>();
+    types = placeList.get(ticker.pageIndex);
+    int radius = 500;
+    results = new ArrayList<String>();
     String placesUrl = "https://maps.googleapis.com/maps/api/place/radarsearch/json?location="+geolocation.latitude+","+geolocation.longitude+"&radius="+radius+"&types="+encode(types)+"&key=AIzaSyCKVs8ruHWC9-gx2b2XpNz2AxzqUYvAD6c"; // &keyword=vegetarian&
     String placesContent[] = loadUrl(placesUrl);
     if (placesContent != null) {
@@ -3060,16 +3671,20 @@ class News {
   String newsKey = "df5b7c70d8675c367c0cbacc5b8879e0:11:74861169";
   ArrayList<Article> articles;
   boolean updated;
+  long lastUpdated;
 
   News() {
   }
 
   public void update() {
-    String[] newsContent = loadLocal("news.json");
+    String[] newsContent = loadStrings("tmp/news.json");
+    lastUpdated = getFileTimeStamp("tmp", "news.json");
+    println("last updated "+ lastUpdated);
+
     if (network.online && newsContent == null) {  // check how old is the file and refresh if required
       String newsUrl = "http://api.nytimes.com/svc/mostpopular/v2/mostviewed/all-sections/1.json?api-key="+encode(newsKey);
       newsContent = loadUrl(newsUrl);
-      saveLocal("news.json", newsContent);
+      saveStrings("tmp/news.json", newsContent);
     } 
     if (newsContent != null) {
       articles = new ArrayList<Article>();
@@ -3114,8 +3729,7 @@ class News {
         if (article.keywords.size() > 0) articles.add(article);
       }
       updated = true;
-    } 
-
+    }
   }
 
   public String cleanKeyword(String str) {
@@ -3145,80 +3759,44 @@ class News {
 class Geolocation {
   String provider;
   double longitude, latitude, altitude, accuracy;
+  String displayName;
   String postCode, country, countryCode, state, county, city, suburb, neighbourhood, street, houseNumber, building;
   long lastUpdated;
   boolean updated;
   boolean located;
 
-  boolean hardLocation = true;
-
   Geolocation() {
-    if (!android) {
-      init();
-      // update();
-    }
+
   }
 
-  public void init() {
-    if (hardLocation) {
-      // manhav 1071
-      // latitude = 40.7352735;
-      // longitude = -73.95551;
-      // los llanos
-      latitude = 28.659363f; 
-      longitude = -17.913001f;
-      provider = "fixed";
-      located = true;
-      } else {
-        if (network.externalIP != null) {
-          String url = "http://www.geoplugin.net/json.gp?ip="+network.externalIP;
-          String[] geopluginContent = loadUrl(url);
-          if (geopluginContent != null) {
-            saveLocal("geolocation.json", geopluginContent);
-            String jsonFragment = "";
-            for (int i=0; i<geopluginContent.length; i++) {
-              jsonFragment += geopluginContent[i];
-            }
-            processing.data.JSONObject geolocatedData = processing.data.JSONObject.parse(jsonFragment);
-            latitude = geolocatedData.getFloat("geoplugin_latitude");
-            longitude = geolocatedData.getFloat("geoplugin_longitude");
-            provider = "geoplugin";
-            located = true;
-          }
-        }
-      }
+  public void update() {
+    String[] geolocationContent = loadStrings("tmp/location.json");
+    lastUpdated = getFileTimeStamp("tmp", "location.json");
+    if (located && network.online && geolocationContent == null) {
+      String url = "http://nominatim.openstreetmap.org/reverse?lat="+latitude+"&lon="+longitude+"&format=json";
+      geolocationContent = loadUrl(url);
+      lastUpdated = time.currentTimeStamp;
     }
-
-    public void update() {
-      if (located && !updated && network.online) {
-        String url = "http://nominatim.openstreetmap.org/reverse?lat="+latitude+"&lon="+longitude+"&format=json";
-        String[] geolocationContent = loadUrl(url);
-        if (geolocationContent != null) {
-          saveLocal("location.json", geolocationContent);
-          String jsonFragment = geolocationContent[0];
-        // println(jsonFragment);
-        // if (!jsonFragment.contains("error")) {
-          processing.data.JSONObject geolocatedData = processing.data.JSONObject.parse(jsonFragment);
-          processing.data.JSONObject address = geolocatedData.getJSONObject("address");
-          println(address.toString());
-          if (!address.isNull("country")) country = address.getString("country");
-          if (!address.isNull("country_code")) countryCode = address.getString("country_code");
-          if (!address.isNull("state"))   state = address.getString("state");
-          if (!address.isNull("county"))  county = address.getString("county");
-          if (!address.isNull("city"))  city = address.getString("city");
-          if (city == null && !address.isNull("town"))  city = address.getString("town");
-          if (!address.isNull("suburb")) suburb = address.getString("suburb");
-          if (!address.isNull("house_number")) neighbourhood =  address.getString("neighbourhood");
-          if (!address.isNull("road")) street = address.getString("road");
-          if (street == null && !address.isNull("pedestrian")) street = address.getString("pedestrian");
-          if (!address.isNull("house_number")) houseNumber = address.getString("house_number");
-          if (!address.isNull("building")) building = address.getString("building");
-          if (!address.isNull("postcode")) postCode = address.getString("postcode");
-          // if (city != null) updated = true;
-          lastUpdated = time.currentTimeStamp;
-          updated = true;
-        // }
-      }
+    if (geolocationContent != null) {
+      saveStrings("tmp/location.json", geolocationContent);
+      String jsonFragment = geolocationContent[0];
+      processing.data.JSONObject geolocatedData = processing.data.JSONObject.parse(jsonFragment);
+      processing.data.JSONObject address = geolocatedData.getJSONObject("address");
+      if (!address.isNull("display_name")) displayName = address.getString("display_name");
+      if (!address.isNull("country")) country = address.getString("country");
+      if (!address.isNull("country_code")) countryCode = address.getString("country_code");
+      if (!address.isNull("state")) state = address.getString("state");
+      if (!address.isNull("county")) county = address.getString("county");
+      if (!address.isNull("city")) city = address.getString("city");
+      if (city == null && !address.isNull("town"))  city = address.getString("town");
+      if (!address.isNull("suburb")) suburb = address.getString("suburb");
+      if (!address.isNull("house_number")) neighbourhood =  address.getString("neighbourhood");
+      if (!address.isNull("road")) street = address.getString("road");
+      if (street == null && !address.isNull("pedestrian")) street = address.getString("pedestrian");
+      if (!address.isNull("house_number")) houseNumber = address.getString("house_number");
+      if (!address.isNull("building")) building = address.getString("building");
+      if (!address.isNull("postcode")) postCode = address.getString("postcode");
+      updated = true;
     }
   }
 }
@@ -3271,6 +3849,8 @@ class Time {
 /////////////////////////////////////
 
 class Weather {
+  String appId = "1ebe1cb0874724fa15a5a109140d6e4e";
+
   boolean updated;
   long lastUpdated;
   int weatherRefresh = 300; 
@@ -3283,49 +3863,64 @@ class Weather {
   }
 
   public void update() {
-
-    if (geolocation.updated) {
-      String[] weatherContent =  loadLocal("weather.json");
-
-      if (network.online  && weatherContent == null) {  // check how old is the file and refresh if required
-        String weatherUrl = "http://api.openweathermap.org/data/2.5/weather?lat="+geolocation.latitude+"&lon="+geolocation.longitude+"&appid=1ebe1cb0874724fa15a5a109140d6e4e"+"&units=imperial";
-        weatherContent = loadUrl(weatherUrl);
-        saveLocal("weather.json", weatherContent);
+    String[] weatherContent =  loadStrings("tmp/weather.json");
+    if (network.online  && weatherContent == null && geolocation.updated) { 
+      String weatherUrl = "http://api.openweathermap.org/data/2.5/weather?lat="+geolocation.latitude+"&lon="+geolocation.longitude+"&appid="+appId+"&units=imperial";
+      weatherContent = loadUrl(weatherUrl);
+      saveLocal("weather.json", weatherContent);
+    }
+    if (weatherContent != null) {
+      String weatherFragment = weatherContent[0];
+      processing.data.JSONObject weatherJSON = processing.data.JSONObject.parse(weatherFragment);
+      processing.data.JSONArray weatherArray = weatherJSON.getJSONArray("weather");
+      processing.data.JSONObject weather= weatherArray.getJSONObject(0);
+      condition = weather.getString("description");
+      conditionMain = weather.getString("main");
+      processing.data.JSONObject main = weatherJSON.getJSONObject("main");
+      temp = main.getFloat("temp");
+      humidity = main.getFloat("humidity");
+      pressure = main.getFloat("pressure");
+      processing.data.JSONObject cloudsData = weatherJSON.getJSONObject("clouds");
+      clouds = cloudsData.getFloat("all");
+      if (weatherJSON.hasKey("wind")) {
+        processing.data.JSONObject windData = weatherJSON.getJSONObject("wind");
+        windSpeed =  windData.getFloat("speed");
+        if (windData.hasKey("deg")) {
+          windDeg = windData.getFloat("deg");
+        }
+        if (windData.hasKey("gust")) {
+          windGust = windData.getFloat("gust");
+        }
       }
-
-      if (weatherContent != null) {
-        String weatherFragment = weatherContent[0];
-        processing.data.JSONObject weatherJSON = processing.data.JSONObject.parse(weatherFragment);
-        processing.data.JSONArray weatherArray = weatherJSON.getJSONArray("weather");
-        processing.data.JSONObject weather= weatherArray.getJSONObject(0);
-        condition = weather.getString("description");
-        conditionMain = weather.getString("main");
-        processing.data.JSONObject main = weatherJSON.getJSONObject("main");
-        temp = main.getFloat("temp");
-        humidity = main.getFloat("humidity");
-        pressure = main.getFloat("pressure");
-        processing.data.JSONObject cloudsData = weatherJSON.getJSONObject("clouds");
-        clouds = cloudsData.getFloat("all");
-        if (weatherJSON.hasKey("wind")) {
-          processing.data.JSONObject windData = weatherJSON.getJSONObject("wind");
-          windSpeed =  windData.getFloat("speed");
-          if (windData.hasKey("deg")) {
-            windDeg = windData.getFloat("deg");
-          }
-          if (windData.hasKey("gust")) {
-            windGust = windData.getFloat("gust");
-          }
-        }
-        if (weatherJSON.hasKey("rain")) {
-          processing.data.JSONObject rainData = weatherJSON.getJSONObject("rain");
-        }
-        if (weatherJSON.hasKey("clouds")) {
-          processing.data.JSONObject cloudData = weatherJSON.getJSONObject("clouds");
-          clouds = cloudData.getFloat("all");
-        }
-        updated = true;
-        lastUpdated = time.currentTimeStamp;
+      if (weatherJSON.hasKey("rain")) {
+        processing.data.JSONObject rainData = weatherJSON.getJSONObject("rain");
       }
+      if (weatherJSON.hasKey("clouds")) {
+        processing.data.JSONObject cloudData = weatherJSON.getJSONObject("clouds");
+        clouds = cloudData.getFloat("all");
+      }
+      updated = true;
+      lastUpdated = time.currentTimeStamp;
+    }
+  }
+}
+
+/////////////////////////////////////
+// CREDENTIALS
+/////////////////////////////////////
+
+class Credentials {
+  String[] credentials;
+
+  Credentials() {
+    credentials = loadStrings("key/credentials.csv");
+    if (credentials != null) {
+      String items[] = splitTokens(credentials[0],",");
+      println(items[0]);
+      println(items[1]);
+      println(items[2]);
+
+      session = new TembooSession(items[0],items[1],items[2]);
     }
   }
 }
@@ -3350,7 +3945,13 @@ class Teleobject {
 
   public void update() {
     if (comm != null) {
-      if (comm.connected && comm.connecting) { 
+      if (comm.connected && !comm.acknowledged) {
+        comm.writeString("", PING, 0, 0, 0, 0, 0);
+        //comm.update();
+        //comm.lastTx = millis() + 300;
+      }
+
+      if (comm.connected && comm.connecting) { // && comm.acknowledged
         comm.connecting = false;
         manager.setChannel(HELLO);
         manager.loop = false;
@@ -3358,23 +3959,25 @@ class Teleobject {
 
       if (comm.connected) {
         comm.update();
-        // if (millis() < lastPage) comm.busy = true;  // to get rid of bouncing packets!!! check delay with bluetooth!
+        // if (android && comm.busy && !display.busy && millis() > comm.lastTx + 5000) { // so it does not get stacked, if missed a packet...
+        //   println("timeout waiting");
+        //   comm.timeOuts ++;
+        //   //    //comm.writeString("", PING, 0, 0, 0, 0, 0);  
+        //   comm.busy = false;
+        // }
         if (comm.busy) {
           lastPage = millis();
-        } 
-        else {
-          ready = true;
-        }
-      } 
-      else {
-        if (display.busy) {
-          lastPage = millis();
-        } 
-        else {
-          ready = true;
-        }
-      }
-    }
+          } else {
+            ready = true;
+          }
+          } else {
+            if (display.busy) {
+              lastPage = millis();
+              } else {
+                ready = true;
+              }
+            }
+          }
     // checkSensors();
     if (comm.battery > 3.00f && comm.battery < 3.40f) channel = BATTERY;
     play();
@@ -3461,12 +4064,12 @@ class Teleobject {
   public void printPages() {
   }
 
-  public void checkSensors() {    
+  public void checkSensors() {
   }
 
   public void writeString(String content, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
-    if (content.length() > 256 - comm.headerLength - 2) content = content.substring(0,256-comm.headerLength-2); // restrict content to buffer size
-    if (content.length() == 128 - comm.headerLength - 1) content += " "; // avoid packets of 127, they crash, hack!!!
+    if (content.length() > 256 - comm.headerLength - 2) content = content.substring(0, 256-comm.headerLength-2); // restrict content to buffer size
+    if (content.length() == 128 - comm.headerLength - 1) content += " "; // avoid packets of 127, they crash, hack!!! check!!!
 
     content = display.cleanUp(content);
     comm.writeString(content, thisMode, tack, teck, tick, tock, tuck);
@@ -3474,6 +4077,10 @@ class Teleobject {
     // if (name.equals("ticker") && channel != ENERGY && channel != HELLO && channel != BYE) {
     //   reel.pages.add(new Page("", INSTANT, 1, 10, content.length()/2, 0, 0));
     // }
+
+    if (debug) {
+      println(name+"|"+thisMode+"|"+tack+"|"+teck+"|"+tick+"|"+tock+"|"+tuck+"|"+content);
+    }
   }
 }
 
@@ -3493,62 +4100,7 @@ class Page {
 }
 
 
-class Mailbox extends Teleobject {
-  Mailbox(PApplet _parent) {
-    parent = _parent;
-    // num = _num;
-  }
 
-  public void init() {
-    comm = new Comm(parent);
-    display = new MailboxDisplay();
-    comm.portNumber = "1431";
-    comm.targetDeviceAddress = "D2:26:16:99:DF:A5";
-    comm.init();
-  }
-
-  public void printPages() {
-    switch(channel) {
-      case HELLO: 
-      pages.add(new Page("", REFRESH, 0, 0, 0, 0, 1));
-
-      String hello = "What's up"+ (google.loggedin ? " "+profile.givenName : "") +"?";
-      pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-      pages.add(new Page("", FONT, 5, 0, 0, 0, 1));
-      pages.add(new Page(hello, STRING, 0, 1, 1, 64+6, 1));
-      pages.add(new Page("", SERVO, 2, 5, 15, 0, 0));
-
-      break;
-
-      case BYE:
-      pages.add(new Page("", SERVO, 0, 0, 0, 0, 1));
-      pages.add(new Page("", BACKGROUND, 0, 0, 0, 0, 1));
-      pages.add(new Page("", BACKGROUND, 0, 0, 0, 0, 1));
-
-      pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-      pages.add(new Page("", FONT, 5, 0, 0, 0, 1));
-      pages.add(new Page("zzz", STRING, 0, 1, 1, 64+6, 1 ));
-      break;
-
-      case CONTACTS:
-      break;
-
-
-      default:
-      String thisCommandName = "";
-      if (channel > 100 && getPilotByCommand(channel) != null) {
-        thisCommandName = getPilotByCommand(channel).name;
-        } else {
-          thisCommandName = "????";
-        }
-        pages.add(new Page("", SERVO, 2, 5, 15, 0, 0));
-        pages.add(new Page("", FONT, 5, 0, 0, 0, 0));
-        pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
-        pages.add(new Page(thisCommandName, STRING, 0, 1, 1, 64+6, 0));
-        break;
-      }
-    }
-  }
 
 //////////
 // REEL
@@ -3557,7 +4109,6 @@ class Mailbox extends Teleobject {
 class Reel extends Teleobject {
   Reel(PApplet _parent) {
     parent = _parent;
-    // num = _num;
   }
 
   public void init() {
@@ -3640,11 +4191,284 @@ class Display {
   }
 }
 class Ticker extends Teleobject {
-  // long lastTilt, lastPitch;
-  // boolean tiltEngaged, pitchEngaged;
-
   Ticker(PApplet _parent) {
     parent = _parent;
+  }
+
+  public void init() {
+    comm = new Comm(parent);
+    comm.portNumber = "14111";
+    comm.targetDeviceAddress = "FB:57:53:9C:DF:10";
+    display = new TickerDisplay();
+    comm.init();
+  }
+
+  public void printPages() {
+    switch (channel) {
+      case SEARCH:
+      int face = (int)random(16);
+      pages.add(new Page("", LOOK, 65+face, 66+face, 0, 0, 0));
+      break;
+
+      case HELLO: 
+      String hello = "What's up"+ (google.loggedin ? " "+profile.givenName : "") +"?";
+      pages.add(new Page(hello, TICKER, 0, 0, 25, 10, 10));
+      // pages.add(new Page("Entre los muchos filosofos con quienes tropece en las casas de huespedes que he recorrido, ninguno mas enamorado de la filosofia que mi amigo Amoros. Puede decirse que no vivia mas que para esta dama de sus pensamientos. El duro catre de la patrona, sus garbanzos no mucho mas blandos, sus insolencias, sus albondiguillas, eran para el sabrosas penitencias que ofrecia en holocausto a su adorada Metafisica.", TICKER, 0, 0, 20, 10, 0));
+      break;
+
+      case BYE:
+      pages.add(new Page("", SLEEP, 0, 0, 0, 0, 0));
+      break;
+
+      case LOCATION:    
+      if (!geolocation.updated) {
+        pages.add(new Page("we're rather lost...", TICKER, 0, 0, 40, 0, 1));
+        } else {
+          pages.add(new Page(getCoordinate(geolocation.latitude, true)+" "+getCoordinate(geolocation.longitude, false), TICKER, 0, 0, 10, 0, 20));
+          pages.add(new Page((geolocation.houseNumber+" "+geolocation.street).toUpperCase(), TICKER, 0, 0, 10, 0, 20));
+          pages.add(new Page((geolocation.neighbourhood+" "+geolocation.postCode).toUpperCase(), TICKER, 0, 0, 20, 0, 20));
+          pages.add(new Page((geolocation.city+", "+geolocation.state).toUpperCase(), TICKER, 0, 0, 20, 0, 30));
+        }
+        break;
+
+        case DRIVE:
+        if (drive.updated) {
+          for (int i=0; i<drive.driveContent.length; i++) {
+            String thisLine = drive.driveContent[i];
+            String items[] = splitTokens(thisLine, TAB+"");
+            if (items.length > 5) {
+              String content = "";
+              if (items.length>6) content = items[6];
+              pages.add(new Page(content, parseInt(items[0]), parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]), parseInt(items[5])));
+            }
+          }
+          } else {
+            pages.add(new Page(("hmmmm, can't find the instructions...").toLowerCase(), TICKER, 0, 0, 40, 0, 1));
+          }
+          break;
+
+          case WEATHER:
+          if (!weather.updated) {
+            pages.add(new Page(("can't connect to the cloud...").toLowerCase(), TICKER, 0, 0, 40, 0, 1));
+            } else {
+              pages.add(new Page((weather.condition+" in "+geolocation.neighbourhood).toUpperCase(), TICKER, 0, 0, 5, 10, 20));
+              pages.add(new Page("IT'S "+nf(metric ? getCelcius(weather.temp) : weather.temp, 0, 1) + (metric ? "\u00b0c" : "\u00b0f"), CENTERED, 1, 1, 10, 0, 10));
+              pages.add(new Page(PApplet.parseInt(weather.humidity)+"% HUMID", CENTERED, 0, 0, 0, 0, 10));
+              pages.add(new Page("PRESSURE "+PApplet.parseInt(weather.pressure)+"mPa", CENTERED, 0, 0, 0, 0, 10));
+              pages.add(new Page("WIND "+PApplet.parseInt(weather.windSpeed) +"m/h "+(int)weather.windDeg+"\u00b0 "+getHeading(weather.windDeg), CENTERED, 0, 0, 0, 0, 10));
+              pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 20));
+            }
+            break;
+
+            case ONLINE:
+            if (network.online) {
+              pages.add(new Page("ip "+network.externalIP + " ping " + network.pingTime + "ms", TICKER, 0, 0, 10, 0, 0));
+              } else {
+                pages.add(new Page("we're offline. that sucks...", TICKER, 0, 0, 40, 0, 0));
+              }
+              break;
+
+              case WIFI:
+              if (network.wifi) {
+                pages.add(new Page(network.hostName+"@" + network.hostIP, TICKER, 0, 0, 10, 0, 0));
+                } else { 
+                  pages.add(new Page("wifi is disabled, damn!", TICKER, 0, 0, 40, 0, 0));
+                }
+                break;
+
+                case MOBILE:
+                if (network.networked) {
+                  pages.add(new Page("connected to " + network.extra, TICKER, 0, 0, 10, 10, 20));
+                  pages.add(new Page("through " + network.type, TICKER, 0, 0, 10, 10, 20));
+                  pages.add(new Page("current state " + network.state, TICKER, 0, 0, 10, 10, 20));
+                  pages.add(new Page(network.roaming ? "roaming" : "not roaming", TICKER, 0, 0, 10, 0, 20));
+                  } else { 
+                    pages.add(new Page("sighs... no network available...", TICKER, 0, 0, 40, 0, 0));
+                  }
+                  break;
+
+
+                  case BLUETOOTH:
+                  if (comm != null) {
+                    if (comm.connected) {
+                      if (!android) {
+                        pages.add(new Page(comm.portName, TICKER, 0, 0, 10, 0, 0));
+                        } else {
+                          pages.add(new Page(comm.deviceAddress+" "+comm.deviceRssi+"dB", TICKER, 0, 0, 10, 0, 0));
+                        }
+                        } else {
+                          pages.add(new Page("not connected...", TICKER, 0, 0, 40, 0, 0));
+                        }
+                      }
+                      break;
+
+                      case ENERGY:
+                      pages.add(new Page("", BATTERY, 0, 0, 0, 0, 1));
+                      break;
+
+                      case DIM:
+                      manager.play = true;
+                      pages.add(new Page("", BRIGHTNESS, comm.brightness+3, 0, 0, 0, 1));
+                      pages.add(new Page("", PING, 0, 0, 0, 0, 1));
+
+                      break;
+
+                      case ORIENTATION:
+                      pages.add(new Page("", AXIS, 0, 0, 0, 0, 2));
+                      break;
+
+                      case TIME:
+                      pages.add(new Page(getStringTime(true, ". "), CENTERED, 0, 0, 0, 0, 10));
+                      break;
+
+                      case EQ: 
+                      manager.play = true;
+                      comm.busy = false;
+                      String str = "";
+                      for (int i =0; i<32; i++) {
+                        str += ticker.display.getEqChar(eq.eqData[i]);
+                      }
+                      pages.add(new Page(str, STREAM, 0, 0, 0, 0, 1));
+                      break;
+
+                      case GOOGLE:
+                      if (google.loggedin) {
+                        pages.add(new Page("What's up "+profile.givenName+"?", TICKER, 0, 0, 25, 10, 40));
+                        pages.add(new Page(profile.id, SCROLL_PUSH_RIGHT, 0, 0, 5, 0, 20));
+                        pages.add(new Page(profile.email.toUpperCase(), SCROLL_PUSH_RIGHT, 0, 0, 5, 0, 20));
+                        pages.add(new Page("we are over "+profile.minAge, SCROLL_PUSH_RIGHT, 0, 0, 5, 0, 20));
+                        pages.add(new Page("and speak English...", SCROLL_PUSH_RIGHT, 0, 0, 5, 0, 20));
+                        } else {
+                          pages.add(new Page("we gotta login to Google!", TICKER, 0, 0, 40, 0, 1));
+                        }
+                        break;
+
+                        case CONTACTS:
+                        if (contacts.updated) {
+                          pages.add(new Page(("we've got "+contacts.contactList.size()+" friends!").toLowerCase(), SCROLL_CENTER_RIGHT, 0, 0, 0, 0, 40));
+                          pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 0));
+                          for (Contact contact : contacts.contactList) {
+                            pages.add(new Page(contact.title.toUpperCase(), SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 15));
+                          }
+                          } else {
+                            pages.add(new Page("we gotta login to Google!", TICKER, 0, 0, 40, 0, 1));
+                          }
+                          break;
+
+                          case NEWS:
+                          if (news.updated) {
+                            pages.add(new Page(("latest from NY Times"), SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 30));
+                            pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
+                            for (Article article : news.articles) {
+                              pages.add(new Page("", INSTANT, 0, 0, 0, 0, 5));
+                              for (int i=0; i < article.keywords.size(); i++) {
+                                String keyword = article.keywords.get(i);
+                                pages.add(new Page(keyword.toUpperCase(), CENTERED, 0, 0, 0, 0, 10));
+                              }
+                              pages.add(new Page("", INSTANT, 0, 0, 0, 0, 5));
+                              pages.add(new Page(article.title.toUpperCase(), SCROLL_ALL_RIGHT, 0, 0, 90, 0, 10));
+                              pages.add(new Page(article.content.toUpperCase(), TICKER, 0, 0, 20, 10, 30));
+                            }
+                            } else {
+                              pages.add(new Page(("where is the news paper?").toLowerCase(), TICKER, 0, 0, 30, 0, 1));
+                            }
+                            break;
+
+                            case MAIL:
+                            if (mail.updated) {
+                              pages.add(new Page(("latest "+mail.mailList.size()+" emails!").toLowerCase(), SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 50));
+                              pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
+
+                              for (Email email : mail.mailList) {
+                                pages.add(new Page(email.date.toUpperCase(), SCROLL_CENTER_RIGHT, 0, 0, 20, 0, 20));
+                                pages.add(new Page(email.sender.toUpperCase(), TICKER, 0, 0, 20, 20, 30));
+                                pages.add(new Page(email.subject.toUpperCase(), TICKER, 0, 0, 20, 20, 30));
+                                pages.add(new Page(email.snippet.toUpperCase()+"...", TICKER, 0, 0, 20, 20, 30));
+                                pages.add(new Page("", BLANK, 0, 0, 10, 0, 0));
+                              }
+      } else { //
+        pages.add(new Page("we gotta login to Google!", TICKER, 0, 0, 30, 0, 0));
+      }
+      break;
+
+      case CALENDAR:
+      if (calendar.updated) {
+        pages.add(new Page("", TICKER, 0, 0, 0, 0, 1));
+        pages.add(new Page(("do you rememember when...?").toLowerCase(), SCROLL_CENTER_RIGHT, 0, 0, 0, 0, 50));
+        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
+        for (int i=0; i<50; i++) { 
+          Event event = calendar.eventList.get((int)random(calendar.eventList.size()));
+          pages.add(new Page(event.date.toUpperCase(), CENTERED, 0, 0, 0, 0, 20));
+          pages.add(new Page(event.summary.toUpperCase(), TICKER, 0, 0, 50, 10, 30));
+        }
+        } else {
+          pages.add(new Page("can't seem to find our calendar", TICKER, 0, 0, 30, 0, 30));
+        }
+        break;
+
+        case TWITTER:
+        if (twitter.updated) {
+          pages.add(new Page("", TICKER, 0, 0, 0, 0, 1));
+          pages.add(new Page("what's going on in twitter?", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 50));
+          pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 20));
+          pages.add(new Page("@"+twitter.screenName, TICKER, 0, 0, 30, 10, 20));
+          if (twitter.description != null)  pages.add(new Page(twitter.description, TICKER, 0, 0, 30, 10, 20));
+          if (twitter.location != null)  pages.add(new Page("@"+twitter.location, TICKER, 0, 0, 30, 10, 20));
+
+          pages.add(new Page("trending in NYC", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 30));
+          pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
+          for (String trend : twitter.trends) {
+            pages.add(new Page(trend, CENTERED, 0, 0, 0, 0, 10));
+          }
+
+          pages.add(new Page(twitter.followers.size()+" FOLLOWERS", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 30));
+          pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
+          for (String follower : twitter.followers) {
+            pages.add(new Page("@"+follower, CENTERED, 0, 0, 0, 0, 10));
+          }
+
+          pages.add(new Page(twitter.friends.size()+" FRIENDS", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 30));
+          pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
+
+          for (String friend : twitter.friends) {
+            pages.add(new Page("@"+friend, CENTERED, 0, 0, 0, 0, 10));
+          }
+          } else {
+            if (twitter.authenticating) {
+              pages.add(new Page("just a sec, logging in to twitter!", TICKER, 0, 0, 60, 0, 1));
+              } else {
+                pages.add(new Page("oh no, twitter is down!", TICKER, 0, 0, 60, 0, 1));
+              }
+            }
+            break;
+
+            case NAVIGATION:
+            manager.play = false;
+            for (String place : places.placeList) {
+              pages.add(new Page(place.toUpperCase(), SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
+            }
+            break;
+
+            case RESULTS:
+            manager.play = true;
+            if (places.results.size() > 0) {
+              pages.add(new Page("FOUND "+places.results.size()+" "+places.types+"s", TICKER, 0, 0, 30, 0, 20));
+              for (String result : places.results) {
+                pages.add(new Page(result.toUpperCase()+" is open", TICKER, 0, 0, 30, 10, 20));
+              }
+              } else {
+                pages.add(new Page("no "+places.types+"around here!", TICKER, 0, 0, 60, 0, 1));
+              }
+              break;
+            }
+
+    // if (channel != ENERGY && channel != HELLO && channel != BYE) {
+    //   int payload = 0;
+    //   for (Page page : pages) {
+    //     payload += page.content.length();
+    //   }
+    //   reel.pages.add(new Page("", INSTANT, 0, 23, int(payload/5), 0, 5));
+    // }
   }
 
   public void checkSensors() {
@@ -3677,284 +4501,6 @@ class Ticker extends Teleobject {
     //       manager.setChannel(DOWN);    
     //     }
     //   }
-    // }
-  }
-
-  public void init() {
-    display = new TickerDisplay();
-    comm = new Comm(parent);
-    comm.portNumber = "1411";
-    comm.targetDeviceAddress = "FB:57:53:9C:DF:10";
-    comm.init();
-  }
-
-  public void printPages() {
-    switch (channel) {
-      case SEARCH:
-      int face = (int)random(16);
-      pages.add(new Page("", LOOK, 65+face, 66+face, 0, 0, 0));
-      break;
-
-      case HELLO: 
-      String hello = "What's up"+ (google.loggedin ? " "+profile.givenName : "") +"?";
-      pages.add(new Page(hello, TICKER, 0, 0, 50, 10, 10));
-      // pages.add(new Page("Entre los muchos filosofos con quienes tropece en las casas de huespedes que he recorrido, ninguno mas enamorado de la filosofia que mi amigo Amoros. Puede decirse que no vivia mas que para esta dama de sus pensamientos. El duro catre de la patrona, sus garbanzos no mucho mas blandos, sus insolencias, sus albondiguillas, eran para el sabrosas penitencias que ofrecia en holocausto a su adorada Metafisica.", TICKER, 0, 0, 20, 10, 0));
-      break;
-
-      case BYE:
-      pages.add(new Page("", SLEEP, 0, 0, 0, 0, 0));
-      break;
-
-      case LOCATION:    
-      if (!geolocation.updated) {
-        pages.add(new Page("we're rather lost...", TICKER, 0, 0, 80, 0, 1));
-      } 
-      else {
-        pages.add(new Page(getCoordinate(geolocation.latitude, true)+" "+getCoordinate(geolocation.longitude, false), TICKER, 0, 0, 20, 0, 20));
-        pages.add(new Page((geolocation.houseNumber+" "+geolocation.street).toUpperCase(), TICKER, 0, 0, 20, 0, 20));
-        pages.add(new Page((geolocation.neighbourhood+" "+geolocation.postCode).toUpperCase(), TICKER, 0, 0, 20, 0, 20));
-        pages.add(new Page((geolocation.city+", "+geolocation.state).toUpperCase(), TICKER, 0, 0, 20, 0, 30));
-      }
-      break;
-
-      case DRIVE:
-      if (drive.updated) {
-        for (int i=0; i<drive.driveContent.length;i++) {
-          String thisLine = drive.driveContent[i];
-          String items[] = splitTokens(thisLine, TAB+"");
-          if (items.length > 5) {
-            String content = "";
-            if (items.length>6) content = items[6];
-            pages.add(new Page(content, parseInt(items[0]), parseInt(items[1]), parseInt(items[2]), parseInt(items[3]), parseInt(items[4]), parseInt(items[5])));
-          }
-        }
-      }
-      else {
-        pages.add(new Page(("hmmmm, can't find the instructions...").toLowerCase(), TICKER, 0, 0, 80, 0, 1));
-      }
-      break;
-      
-      case WEATHER:
-      if (!weather.updated) {
-        pages.add(new Page(("can't connect to the cloud...").toLowerCase(), TICKER, 0, 0, 80, 0, 1));
-      } 
-      else {
-        pages.add(new Page((weather.condition+" in "+geolocation.neighbourhood).toUpperCase(), TICKER, 0, 0, 10, 10, 20));
-        pages.add(new Page("IT'S "+nf(metric ? getCelcius(weather.temp) : weather.temp, 0, 1) + (metric ? "\u00b0c" : "\u00b0f"), CENTERED, 1, 1, 20, 0, 10));
-        pages.add(new Page(PApplet.parseInt(weather.humidity)+"% HUMID", CENTERED, 0, 0, 0, 0, 10));
-        pages.add(new Page("PRESSURE "+PApplet.parseInt(weather.pressure)+"mPa", CENTERED, 0, 0, 0, 0, 10));
-        pages.add(new Page("WIND "+PApplet.parseInt(weather.windSpeed) +"m/h "+(int)weather.windDeg+"\u00b0 "+getHeading(weather.windDeg), CENTERED, 0, 0, 0, 0, 10));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 20));
-      }
-      break;
-
-      case ONLINE:
-      if (network.online) {
-        pages.add(new Page("ip "+network.externalIP+" ping "+network.pingTime+"ms", TICKER, 0, 0, 20, 0, 0));
-      } 
-      else {
-        pages.add(new Page("we're offline. that sucks...", TICKER, 0, 0, 80, 0, 0));
-      }
-      break;
-
-      case WIFI:
-      if (network.wifi) {
-        pages.add(new Page(network.hostName+"@"+network.hostIP, TICKER, 0, 0, 20, 0, 0));
-      } 
-      else { 
-        pages.add(new Page("can't connect to the cloud...", TICKER, 0, 0, 80, 0, 0));
-      }
-      break;
-
-      case BLUETOOTH:
-      if (comm != null) {
-        if (comm.connected) {
-          if (!android) {
-            pages.add(new Page(comm.portName, TICKER, 0, 0, 20, 0, 0));
-          } 
-          else {
-            pages.add(new Page(comm.deviceAddress+" "+comm.deviceRssi+"dB", TICKER, 0, 0, 20, 0, 0));
-          }
-        } 
-        else {
-          pages.add(new Page("not connected...", TICKER, 0, 0, 80, 0, 0));
-        }
-      }
-      break;
-
-      case ENERGY:
-      pages.add(new Page("", BATTERY, 0, 0, 0, 0, 1));
-      break;
-
-      case DIM:
-      manager.play = true;
-      pages.add(new Page("", BRIGHTNESS, comm.brightness+3, 0, 0, 0, 1));
-      pages.add(new Page("", PING, 0, 0, 0, 0, 1));
-
-      break;
-
-      case ORIENTATION:
-      pages.add(new Page("", AXIS, 0, 0, 0, 0, 2));
-      break;
-
-      case TIME:
-      pages.add(new Page(getStringTime(true, ". "), CENTERED, 0, 0, 0, 0, 10));
-      break;
-
-      case EQ: 
-      manager.play = true;
-      comm.busy = false;
-      String str = "";
-      for (int i =0;i<32;i++) {
-        str += ticker.display.getEqChar(eq.eqData[i]);
-      }
-      pages.add(new Page(str, STREAM, 0, 0, 0, 0, 1));
-      break;
-
-      case GOOGLE:
-      if (google.loggedin) {
-        pages.add(new Page("What's up "+profile.givenName+"?", TICKER, 0, 0, 50, 10, 40));
-        pages.add(new Page(profile.id, SCROLL_PUSH_RIGHT, 0, 0, 10, 0, 20));
-        pages.add(new Page(profile.email.toUpperCase(), SCROLL_PUSH_RIGHT, 0, 0, 10, 0, 20));
-        pages.add(new Page("we are over "+profile.minAge, SCROLL_PUSH_RIGHT, 0, 0, 10, 0, 20));
-        pages.add(new Page("and speak English...", SCROLL_PUSH_RIGHT, 0, 0, 10, 0, 20));
-      } 
-      else {
-        pages.add(new Page("we gotta login to Google!", TICKER, 0, 0, 30, 0, 1));
-      }
-      break;
-
-      case CONTACTS:
-      if (contacts.updated) {
-        pages.add(new Page(("we've got "+contacts.contactList.size()+" friends!").toLowerCase(), SCROLL_CENTER_RIGHT, 0, 0, 30, 0, 40));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 0));
-        for (Contact contact : contacts.contactList) {
-          pages.add(new Page(contact.title.toUpperCase(), SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 15));
-        }
-      } 
-      else {
-        pages.add(new Page("we gotta login to Google!", TICKER, 0, 0, 30, 0, 1));
-      }
-      break;
-
-      case NEWS:
-      if (news.updated) {
-        pages.add(new Page(("latest from NY Times"), SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 30));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
-        for (Article article : news.articles) {
-          pages.add(new Page("", INSTANT, 0, 0, 0, 0, 5));
-          for (int i=0; i < article.keywords.size(); i++) {
-            String keyword = article.keywords.get(i);
-            pages.add(new Page(keyword.toUpperCase(), CENTERED, 0, 0, 0, 0, 10));
-          }
-          pages.add(new Page("", INSTANT, 0, 0, 0, 0, 5));
-          pages.add(new Page(article.title.toUpperCase(), SCROLL_ALL_RIGHT, 0, 0, 90, 0, 10));
-          pages.add(new Page(article.content.toUpperCase(), TICKER, 0, 0, 20, 10, 30));
-        }
-      } 
-      else {
-        pages.add(new Page(("where is the news paper?").toLowerCase(), TICKER, 0, 0, 30, 0, 1));
-      }
-      break;
-
-      case MAIL:
-      if (mail.updated) {
-        pages.add(new Page(("latest "+mail.mailList.size()+" emails!").toLowerCase(), SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 50));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
-
-        for (Email email : mail.mailList) {
-          pages.add(new Page(email.date.toUpperCase(), SCROLL_CENTER_RIGHT, 0, 0, 20, 0, 20));
-          pages.add(new Page(email.sender.toUpperCase(), TICKER, 0, 0, 20, 20, 30));
-          pages.add(new Page(email.subject.toUpperCase(), TICKER, 0, 0, 20, 20, 30));
-          pages.add(new Page(email.snippet.toUpperCase()+"...", TICKER, 0, 0, 20, 20, 30));
-          pages.add(new Page("", BLANK, 0, 0, 10, 0, 0));
-        }
-      } else { //
-        pages.add(new Page("we gotta login to Google!", TICKER, 0, 0, 30, 0, 0));
-      }
-      break;
-
-      case CALENDAR:
-      if (calendar.updated) {
-        pages.add(new Page("", TICKER, 0, 0, 0, 0, 1));
-        pages.add(new Page(("do you rememember when...?").toLowerCase(), SCROLL_CENTER_RIGHT, 0, 0, 0, 0, 50));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
-        for (int i=0; i<50; i++) { 
-          Event event = calendar.eventList.get((int)random(calendar.eventList.size()));
-          pages.add(new Page(event.date.toUpperCase(), CENTERED, 0, 0, 0, 0, 20));
-          pages.add(new Page(event.summary.toUpperCase(), TICKER, 0, 0, 50, 10, 30));
-        }
-      } 
-      else {
-        pages.add(new Page("can't seem to find our calendar", TICKER, 0, 0, 30, 0, 30));
-      }
-      break;
-
-      case TWITTER:
-      if (twitter.updated) {
-        pages.add(new Page("", TICKER, 0, 0, 0, 0, 1));
-        pages.add(new Page("what's going on in twitter?", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 50));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 20));
-        pages.add(new Page("@"+twitter.screenName, TICKER, 0, 0, 30, 10, 20));
-        if (twitter.description != null)  pages.add(new Page(twitter.description, TICKER, 0, 0, 30, 10, 20));
-        if (twitter.location != null)  pages.add(new Page("@"+twitter.location, TICKER, 0, 0, 30, 10, 20));
-
-        pages.add(new Page("trending in NYC", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 30));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
-        for (String trend : twitter.trends) {
-          pages.add(new Page(trend, CENTERED, 0, 0, 0, 0, 10));
-        }
-
-        pages.add(new Page(twitter.followers.size()+" FOLLOWERS", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 30));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
-        for (String follower : twitter.followers) {
-          pages.add(new Page("@"+follower, CENTERED, 0, 0, 0, 0, 10));      
-        }
-
-        pages.add(new Page(twitter.friends.size()+" FRIENDS", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 30));
-        pages.add(new Page("", SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
-
-        for (String friend : twitter.friends) {
-          pages.add(new Page("@"+friend, CENTERED, 0, 0, 0, 0, 10));
-        }
-      } 
-      else {
-        if (twitter.authenticating) {
-          pages.add(new Page("just a sec, logging in to twitter!", TICKER, 0, 0, 60, 0, 1));
-        }
-        else {
-          pages.add(new Page("oh no, twitter is down!", TICKER, 0, 0, 60, 0, 1));
-        }
-      }
-      break;
-
-      case NAVIGATION:
-      manager.play = false;
-      for (String place : places.placeList) {
-        pages.add(new Page(place.toUpperCase(), SCROLL_PUSH_RIGHT, 0, 0, 0, 0, 1));
-      }
-      break;
-
-      case RESULTS:
-      manager.play = true;
-      if (places.results.size() > 0) {
-        pages.add(new Page("FOUND "+places.results.size()+" "+places.types+"s", TICKER, 0, 0, 30, 0, 20));
-        for (String result : places.results) {
-          pages.add(new Page(result.toUpperCase()+" is open", TICKER, 0, 0, 30, 10, 20));
-        }
-      } 
-      else {
-        pages.add(new Page("no "+places.types+"around here!", TICKER, 0, 0, 60, 0, 1));
-      }
-      break;
-    }
-
-    // if (channel != ENERGY && channel != HELLO && channel != BYE) {
-    //   int payload = 0;
-    //   for (Page page : pages) {
-    //     payload += page.content.length();
-    //   }
-    //   reel.pages.add(new Page("", INSTANT, 0, 23, int(payload/5), 0, 5));
     // }
   }
 }
@@ -4012,6 +4558,34 @@ class TickerDisplay extends Display {
     }
     alphaFont = loadStrings("csv/alphaFont.csv");
     clearDisplay();
+  }
+
+
+  public void display() {
+    update();
+    if (manager.channel == ORIENTATION) {
+      targetRot = radians(ticker.comm.ay);
+      rot += (targetRot-rot)*.1f;
+      rotate(rot);
+    }
+    strokeWeight(thickStroke);
+    stroke(0);
+    fill(255);
+    shape(outline, 0, 0);
+    fill(backgroundColor);
+    shape(outline_mask, 0, 0);
+    fill(redColor);
+    noStroke();
+    float currentX = -546;
+    for (int i=0; i < CHARS; i++) {
+      pushMatrix();
+      translate(currentX, 36);
+      scale(.16f);
+      drawChar(dis[i]);
+      if (dec[i]) drawChar('.');
+      currentX += 35;
+      popMatrix();
+    }
   }
 
   public char getEqChar(int val) {
@@ -4142,117 +4716,115 @@ class TickerDisplay extends Display {
       } 
       dis[cursorX++] = '%';
       dis[cursorX++] = ' ';
-      dis[cursorX++] = nf(ticker.comm.battery*100,3,0).charAt(0);
+      dis[cursorX++] = nf(ticker.comm.battery*100, 3, 0).charAt(0);
       dec[cursorX-1] = true;
-      dis[cursorX++] = nf(ticker.comm.battery*100,3,0).charAt(1);
-      dis[cursorX++] = nf(ticker.comm.battery*100,3,0).charAt(2);
+      dis[cursorX++] = nf(ticker.comm.battery*100, 3, 0).charAt(1);
+      dis[cursorX++] = nf(ticker.comm.battery*100, 3, 0).charAt(2);
       dis[cursorX++] = 131; 
 
       if (ticker.comm.charging) {
         if (millis() > chargingNext) {    
-         chargingX ++;
-         chargingNext = millis() + chargingSpeed;
-         if (chargingX >= batIndex + 1) {
-          chargingNext = millis() + chargingSpeed * 4;
-          chargingX = -1;
+          chargingX ++;
+          chargingNext = millis() + chargingSpeed;
+          if (chargingX >= batIndex + 1) {
+            chargingNext = millis() + chargingSpeed * 4;
+            chargingX = -1;
+          }
         }
-      }
-      dis[0] = chargingX > 0 ? 130 : '[';
-      for (int i = 1; i < batLong - 1; i++) {
-        dis[i] =  i < chargingX ? PApplet.parseChar(130) : PApplet.parseChar(128);
-      }
-      dis[batLong - 1] = chargingX >= 10 ? 130 : ']';
+        dis[0] = chargingX > 0 ? 130 : '[';
+        for (int i = 1; i < batLong - 1; i++) {
+          dis[i] =  i < chargingX ? PApplet.parseChar(130) : PApplet.parseChar(128);
+        }
+        dis[batLong - 1] = chargingX >= 10 ? 130 : ']';
+        } else {
+          dis[0] = batIndex == 0 ? '[' : 130;
+          for (int i = 1; i < batLong - 1; i++) {
+            dis[i] =  i < batIndex ?  PApplet.parseChar(130) : PApplet.parseChar(128);
+          }
+          dis[batLong - 1] = batIndex == 10 ? 130 : ']';
+        }
 
-    } 
-    else {
-      dis[0] = batIndex == 0 ? '[' : 130;
-      for (int i = 1; i < batLong - 1; i++) {
-        dis[i] =  i < batIndex ?  PApplet.parseChar(130) : PApplet.parseChar(128);
-      }
-      dis[batLong - 1] = batIndex == 10 ? 130 : ']';
-    }
+        cursorX++;
+        if (ticker.comm.battery < 3.40f && !ticker.comm.charging && millis() % 1000 < 500) {
+          data = "LOW BATTERY";
+          for (int i = 0; i < data.length(); i++) {
+            dis[cursorX++] = data.charAt(i);
+          }
+        }
+        break;
 
-    cursorX++;
-    if (ticker.comm.battery < 3.40f && !ticker.comm.charging && millis() % 1000 < 500) {
-      data = "LOW BATTERY";
-      for (int i = 0; i < data.length(); i++) {
-        dis[cursorX++] = data.charAt(i);
-      }
-    }
-    break;
+        case RANDOM:
+        if (millis() > lastTick + tick) {
+          lastTick = millis();
+          clearDisplay();
+          for (int i = 0; i < CHARS; i++) {
+            switch (tack) {
+              case 0:
+              dis[i] = PApplet.parseChar(PApplet.parseInt(48 + random(10)));
+              break;
+              case 1:
+              dis[i] = PApplet.parseChar(PApplet.parseInt(65 + random(28)));
+              break;
+              case 2:
+              dis[i] = PApplet.parseChar(PApplet.parseInt(0 + random(128)));
+              break;
+              case 3:
+              dis[i] = PApplet.parseChar(PApplet.parseInt(random(15)));
+              break;
+              case 4:
+              dec[i] = random(10) < 5;
+              break;
+            }
+          }
+        }
+        break;
 
-    case RANDOM:
-    if (millis() > lastTick + tick) {
-      lastTick = millis();
-      clearDisplay();
-      for (int i = 0; i < CHARS; i++) {
-        switch (tack) {
+        case LOOK:
+        clearDisplay();
+        int eyesX = 0;
+        boolean eyesB = millis() % 1200 < 300;
+        face = tack-65;
+        faceClosed = teck-65;
+        dis[eyesX] = !eyesB ?  PApplet.parseChar(leftEyes[face]) : PApplet.parseChar(leftEyes[faceClosed]);
+        dis[eyesX + 1] = !eyesB ?  PApplet.parseChar(rightEyes[face]) : PApplet.parseChar(rightEyes[faceClosed]) ;
+        dec[eyesX] = true;
+        break;
+
+        case SLEEP:
+        clearDisplay();
+        switch (zzz) {
           case 0:
-          dis[i] = PApplet.parseChar(PApplet.parseInt(48 + random(10)));
           break;
           case 1:
-          dis[i] = PApplet.parseChar(PApplet.parseInt(65 + random(28)));
+          dis[0] = 'z';
           break;
           case 2:
-          dis[i] = PApplet.parseChar(PApplet.parseInt(0 + random(128)));
+          dis[0] = 'z';
+          dis[1] = 'z';
           break;
-          case 3:
-          dis[i] = PApplet.parseChar(PApplet.parseInt(random(15)));
-          break;
-          case 4:
-          dec[i] = random(10) < 5;
+          case 3 :
+          dis[0] = 'z';
+          dis[1] = 'z';
+          dis[2] = 'z';
           break;
         }
-      }
-    }
-    break;
-
-    case LOOK:
-    clearDisplay();
-    int eyesX = 0;
-    boolean eyesB = millis() % 1200 < 300;
-    face = tack-65;
-    faceClosed = teck-65;
-    dis[eyesX] = !eyesB ?  PApplet.parseChar(leftEyes[face]) : PApplet.parseChar(leftEyes[faceClosed]);
-    dis[eyesX + 1] = !eyesB ?  PApplet.parseChar(rightEyes[face]) : PApplet.parseChar(rightEyes[faceClosed]) ;
-    dec[eyesX] = true;
-    break;
-
-    case SLEEP:
-    clearDisplay();
-    switch (zzz) {
-      case 0:
-      break;
-      case 1:
-      dis[0] = 'z';
-      break;
-      case 2:
-      dis[0] = 'z';
-      dis[1] = 'z';
-      break;
-      case 3 :
-      dis[0] = 'z';
-      dis[1] = 'z';
-      dis[2] = 'z';
-      break;
-    }
-    if (millis() > nextZ) {
-      zzz += zzzD;
-      if (zzz == 3) zzzD = -1;
-      if (zzz == 0) zzzD = 1;
-      nextZ = millis() + 60;
-      if (zzz == 0) {
-        zzzC ++;
-        if (zzzC % 2 == 0) {
-          nextZ += 3000;
+        if (millis() > nextZ) {
+          zzz += zzzD;
+          if (zzz == 3) zzzD = -1;
+          if (zzz == 0) zzzD = 1;
+          nextZ = millis() + 60;
+          if (zzz == 0) {
+            zzzC ++;
+            if (zzzC % 2 == 0) {
+              nextZ += 3000;
+            }
+          }
         }
-      }
-    }
-    break;
+        break;
 
-    case SCROLL:
-    if (millis() > lastTick + tick) {
-      lastTick = millis();
+        case SCROLL:
+        if (millis() > lastTick + tick) {
+          lastTick = millis();
         if (cursorX < breakX ) {    /// scroll right
           cursorX ++;
           for (int i = 0; i < CHARS-1; i++) {
@@ -4270,155 +4842,152 @@ class TickerDisplay extends Display {
                 breakX --;
               }
             }
+            } else {
+              dis[CHARS - 1] = ' ';
+              dec[CHARS - 1] = false;
+            }
           } 
-          else {
-            dis[CHARS - 1] = ' ';
-            dec[CHARS - 1] = false;
-          }
-        } 
-        else if (cursorX > breakX ) {   /// scroll left
-          cursorX --;
-          for (int i = CHARS-1; i > 0; i--) {
-            dis[i] = dis[i - 1];
-            dec[i] = dec[i - 1];
-          }
+          else if (cursorX > breakX ) { 
+            cursorX --;
+            for (int i = CHARS-1; i > 0; i--) {
+              dis[i] = dis[i - 1];
+              dec[i] = dec[i - 1];
+            }
 
-          if (data.length() > 0) {
-            dis[0] = data.charAt(data.length()-1);
-            dec[0] = false;
-            data = data.substring(0, data.length()-1);
-            // if (data.length() > 0) {
-            //   if (data.charAt(0) == '.' && dis [CHARS-2] != '.') {
-            //     dec[CHARS - 1] = true;
-            //     data = data.substring(1, data.length());
-            //     breakX --;
-            //   }
-            // }
-          } 
-          else {
-            dis[0] = ' ';
-            dec[0] = false;
-          }
-        } 
-        else {
-          busy = false;
-        }
-      }
-      break;
-
-      case TICKER:      
-      if (millis() - lastTick > tick) {
-        lastTick = millis();
-        if (data.length() > 0) {
-          if (breakX == 0) {
-            clearDisplay();
-            breakX = data.length();
-            if (breakX > CHARS) breakX = findLastChar(data.substring(0, CHARS), ' ');
-            if (breakX == 0) breakX = data.length();
-            if (breakX > CHARS) breakX = CHARS;
-            if (data.charAt(0) == ' ' && data.length() > 1) data = data.substring(1, data.length());
-          }
-          dis[cursorX] = data.charAt(0);
-          data = data.substring(1, data.length());
-          if (data.length() > 0) {
-            if (data.charAt(0) == '.' && dis[cursorX] != '.') {
-              dec[cursorX] = true;
-              data = data.substring(1, data.length());
-              breakX --;
-              if (data.length() == 0) {
-                lastTick = millis() + tock*100;
-              }
+            if (data.length() > 0) {
+              dis[0] = data.charAt(data.length()-1);
+              dec[0] = false;
+              data = data.substring(0, data.length()-1);
+              // if (data.length() > 0) {
+              //   if (data.charAt(0) == '.' && dis [CHARS-2] != '.') {
+              //     dec[CHARS - 1] = true;
+              //     data = data.substring(1, data.length());
+              //     breakX --;
+              //   }
+              // }
+            } 
+            else {
+              dis[0] = ' ';
+              dec[0] = false;
             }
           } 
           else {
-            lastTick = millis() + tock*100;
+            busy = false;
           }
-          cursorX ++;
-          if (cursorX == breakX) {
-            breakX = 0;
-            if (data.length()>0) {
+        }
+        break;
+
+        case TICKER:      
+        if (millis() - lastTick > tick) {
+          lastTick = millis();
+          if (data.length() > 0) {
+            if (breakX == 0) {
+              clearDisplay();
+              breakX = data.length();
+              if (breakX > CHARS) breakX = findLastChar(data.substring(0, CHARS), ' ');
+              if (breakX == 0) breakX = data.length();
+              if (breakX > CHARS) breakX = CHARS;
+              if (data.charAt(0) == ' ' && data.length() > 1) data = data.substring(1, data.length());
+            }
+            dis[cursorX] = data.charAt(0);
+            data = data.substring(1, data.length());
+            if (data.length() > 0) {
+              if (data.charAt(0) == '.' && dis[cursorX] != '.') {
+                dec[cursorX] = true;
+                data = data.substring(1, data.length());
+                breakX --;
+                if (data.length() == 0) {
+                  lastTick = millis() + tock*100;
+                }
+              }
+            } 
+            else {
               lastTick = millis() + tock*100;
             }
-            if (dis[cursorX - 1] == ' ') cursorX --;
-          }
-        } 
-        else {
-          busy = false;
-        }
-      }
-      if (cursorX < CHARS && cursorX >= 0) dis[cursorX] = millis() % 500 < 250 ? ' ' : '_';
-      break;
-
-      case RAIN:
-      if (millis() - lastTick > tick * 10 ) {
-        lastTick = millis();
-        for (int i = 0; i < CHARS; i++) {
-          if (dis[i] == ' ') {
-            if (random(100) < tock) dis[i] = 10;
+            cursorX ++;
+            if (cursorX == breakX) {
+              breakX = 0;
+              if (data.length()>0) {
+                lastTick = millis() + tock*100;
+              }
+              if (dis[cursorX - 1] == ' ') cursorX --;
+            }
           } 
-          else if (dis[i] == 10) {
-            dis[i] = 11;
-            if (random(100) < 70) dis[i] = '/';
-          } 
-          else if (dis[i] == 11) {
-            dis[i] = ' ';
-          } 
-          else if (dis[i] == '/') {
-            dis[i] = 11;
-            if (random(100) < 30) dis[i] = '/';
+          else {
+            busy = false;
           }
         }
-      }
-      break;
+        if (cursorX < CHARS && cursorX >= 0) dis[cursorX] = millis() % 500 < 250 ? ' ' : '_';
+        break;
 
-      case SNOW:
-      // tack fall
-      // teck wind
-      // tick speed
-      // tock intensity
-
-
-      if (millis() - lastTick > tick * 10 ) {
-        lastTick = millis();
-        for (int i = 0; i < CHARS; i++) {
-          if (random(100) < 70 && dis[i] > 7 && dis[i] < 14) {
-            dis[i] = (char)32;
-          }
-          switch (dis[i]) {
-            case (char)141:
-            dis[i] = (char)137;
-            break;
-            case (char)142:
-            dis[i] = (char)138;
-            break;
-            case (char)143:
-            dis[i] = (char)139;
-            break;
-            case (char)144:
-            dis[i] = (char)140;
-            break;
-            case (char)8:
-            dis[i] = (char)137;
-            break;
-            case (char)10:
-            dis[i] = (char)138;
-            break;
-            case (char)11:
-            dis[i] = (char)139;
-            break;
-            case (char)13:
-            dis[i] = (char)140;
-            break;
-          }
-          if (dis[i] == (char)32 && random(100) < tock) {
-            dis[i] = random(100) < 50 ? (char)137 : (char)138;
-          }
-          if (random(100) < 1) {
-            dis[i] = ' ';
+        case RAIN:
+        if (millis() - lastTick > tick * 10 ) {
+          lastTick = millis();
+          for (int i = 0; i < CHARS; i++) {
+            if (dis[i] == ' ') {
+              if (random(100) < tock) dis[i] = 10;
+            } 
+            else if (dis[i] == 10) {
+              dis[i] = 11;
+              if (random(100) < 70) dis[i] = '/';
+            } 
+            else if (dis[i] == 11) {
+              dis[i] = ' ';
+            } 
+            else if (dis[i] == '/') {
+              dis[i] = 11;
+              if (random(100) < 30) dis[i] = '/';
+            }
           }
         }
-        for (int i = 0; i < CHARS; i++) {
-          // WIND
+        break;
+
+        case SNOW:
+        // tack fall
+        // teck wind
+        // tick speed
+        // tock intensity
+
+        if (millis() - lastTick > tick * 10 ) {
+          lastTick = millis();
+          for (int i = 0; i < CHARS; i++) {
+            if (random(100) < 70 && dis[i] > 7 && dis[i] < 14) {
+              dis[i] = (char)32;
+            }
+            switch (dis[i]) {
+              case (char)141:
+              dis[i] = (char)137;
+              break;
+              case (char)142:
+              dis[i] = (char)138;
+              break;
+              case (char)143:
+              dis[i] = (char)139;
+              break;
+              case (char)144:
+              dis[i] = (char)140;
+              break;
+              case (char)8:
+              dis[i] = (char)137;
+              break;
+              case (char)10:
+              dis[i] = (char)138;
+              break;
+              case (char)11:
+              dis[i] = (char)139;
+              break;
+              case (char)13:
+              dis[i] = (char)140;
+              break;
+            }
+            if (dis[i] == (char)32 && random(100) < tock) {
+              dis[i] = random(100) < 50 ? (char)137 : (char)138;
+            }
+            if (random(100) < 1) {
+              dis[i] = ' ';
+            }
+          }
+          for (int i = 0; i < CHARS; i++) {
           int wind = (int)(-2 + random(teck*2)); //-x * 40;
           if (random(100) < abs(wind)) {
             if (teck > 0) {
@@ -4471,7 +5040,6 @@ class TickerDisplay extends Display {
             }
           } 
           else {
-            // FALL
             if (random(100) < tack) {
               if (dis[i] == (char)137) {
                 dis[i] = 139;
@@ -4488,7 +5056,7 @@ class TickerDisplay extends Display {
             }
           }
         }
-        if (random(100) < 50)  {
+        if (random(100) < 50) {
           for (int i = 0; i < CHARS; i++) {
             if (random(100) < 80) {
               switch (dis[i]) {
@@ -4505,8 +5073,8 @@ class TickerDisplay extends Display {
                 dis[i] = (char)144;
                 break;
               }
-            }  
-            else  {
+            } 
+            else {
               switch (dis[i]) {
                 case (char)137:
                 dis[i] = (char)8;
@@ -4529,33 +5097,6 @@ class TickerDisplay extends Display {
     }
   }
 
-  public void display() {
-    update();
-    if (manager.channel == ORIENTATION) {
-      targetRot = radians(ticker.comm.ay);
-      rot += (targetRot-rot)*.1f;
-      rotate(rot);
-    }
-    strokeWeight(thick);
-    stroke(0);
-    fill(255);
-    shape(outline, 0, 0);
-    fill(backgroundColor);
-    shape(outline_mask, 0, 0);
-    fill(redColor);
-    noStroke();
-    float currentX = -546;
-    for (int i=0; i < CHARS; i++) {
-      pushMatrix();
-      translate(currentX, 36);
-      scale(.16f);
-      drawChar(dis[i]);
-      if (dec[i]) drawChar('.');
-      currentX += 35;
-      popMatrix();
-    }
-  }
-
   public void printString(String thisString, int thisMode, int thisTack, int thisTeck, int thisTick, int thisTock, int thisTuck) {
     data = thisString;
     if (thisMode != PING) {
@@ -4566,7 +5107,7 @@ class TickerDisplay extends Display {
       tock = thisTock;
       tuck = thisTuck;
     }
-    busy = true;
+    busy = false;
 
     lastTick = millis();
 
@@ -4574,17 +5115,16 @@ class TickerDisplay extends Display {
 
       case LOADING:
       clearDisplay();
-      busy = false;
       break;
 
       // case ALPHABET:
       // clearDisplay();
       // busy = false;
 
-      // case BRIGHTNESS:
-      // clearDisplay();
-      // break;
-      
+      case BRIGHTNESS:
+      clearDisplay();
+      break;
+
       // case BATTERY:
       // clearDisplay();
       // break;
@@ -4595,17 +5135,18 @@ class TickerDisplay extends Display {
 
       case SNOW:
       clearDisplay();
-      busy = false;
       break;
 
       case RAIN:
       clearDisplay();
-      busy = false;
       break;
 
       case BLANK:
       clearDisplay();
-      busy = false;
+      break;
+
+      case SLEEP:
+      clearDisplay();
       break;
 
       case INSTANT:
@@ -4621,7 +5162,6 @@ class TickerDisplay extends Display {
         }
         cursorX ++;
       }
-      busy = false;
       break;
 
       case STREAM:
@@ -4631,7 +5171,6 @@ class TickerDisplay extends Display {
           dec[i] = false;
         }
       }
-      busy = false;
       break;
 
       case CENTERED:
@@ -4648,23 +5187,25 @@ class TickerDisplay extends Display {
         }
         cursorX ++;
       }
-      busy = false;
       break;
 
       case TICKER:
       breakX = 0;
+      busy = true;
       break;
 
       case SCROLL_ALL_RIGHT:
       cursorX = 0;
       breakX = CHARS + data.length();
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_CENTER_RIGHT:
       cursorX = 0;
       breakX = ((CHARS - data.length()) / 2) + data.length();
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_PUSH_RIGHT:
@@ -4688,18 +5229,21 @@ class TickerDisplay extends Display {
         }
       } 
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_ALL_LEFT:
       cursorX = 0;
       breakX = -CHARS - data.length();
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_CENTER_LEFT:
       cursorX = 0;
       breakX = -((CHARS - data.length()) / 2) - data.length();
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_PUSH_LEFT:
@@ -4724,12 +5268,14 @@ class TickerDisplay extends Display {
         }
       } 
       mode = SCROLL;
+      busy = true;
       break;
 
       case AIRPORT:
       for (int i = data.length(); i < CHARS; i++) {
         data += " ";
       }
+      busy = true;      
       break;
     }
   }
@@ -4747,10 +5293,10 @@ class TickerDisplay extends Display {
   }
 
   public void clearDisplay() {
-    for (int i=0; i < CHARS; i++) {
+    for (int i = 0; i < CHARS; i++) {
       dis[i] = ' ';
-      dec[i] = false;
     }
+    dec = new boolean[CHARS];
     cursorX = 0;
   }
 
@@ -4762,7 +5308,7 @@ class TickerDisplay extends Display {
     String res = "";
     for (int i=0; i<str.length(); i++) {
       char ch = str.charAt(i);
-      if (ch == '&'){
+      if (ch == '&') {
         if (str.charAt(i+1) == '#') {
           ch = 39;
           i = i+6;
@@ -4779,27 +5325,23 @@ class TickerDisplay extends Display {
       if (invalid.indexOf(ch) != -1) {
         ch = subs.charAt(invalid.indexOf(ch));
       }
-      // if (ch > 127) {
-      //   ch = 39;
-      // }
+
       if (valid.indexOf(ch) != -1) {
         res +=  ch;
       } 
       else {
         res += PApplet.parseChar(39);//'-';
-        //ch = 39;
       }
-
     }
     return res;
   }
 }
             
 class Twitter {
-  String CONSUMER_KEY = "Ray2xXVP9I1PuxgOP1Cu6IdXO";
-  String CONSUMER_SECRET = "EnZmqdtHIoH4zhDrp4VE0Ze3LzrWUrdFSZUg2CHSRu3iNzVk2i";
-  String TOKEN_SECRET;// = "dxKlTw62t3w9Dc3H3pt5n5qOYqVpslIMfyVeCQV7LnbmI";
-  String TOKEN;// = "dxKlTw62t3w9Dc3H3pt5n5qOYqVpslIMfyVeCQV7LnbmI";
+  String CONSUMER_KEY;// = "Ray2xXVP9I1PuxgOP1Cu6IdXO";
+  String CONSUMER_SECRET; //= "EnZmqdtHIoH4zhDrp4VE0Ze3LzrWUrdFSZUg2CHSRu3iNzVk2i";
+  String TOKEN_SECRET;
+  String TOKEN;
   String CALLBACK_ID;
   String name;
   String screenName;
@@ -4812,13 +5354,18 @@ class Twitter {
   String status;
   String lastUpdated;
   String mediaUrl;
-
   boolean updated;
   PImage img;
   boolean loggedin, authenticating, profiled;
   ArrayList<String> trends, followers, friends;
 
   Twitter () {
+    if (credentials.credentials != null) {
+      String[] items = splitTokens(credentials.credentials[3], ",");
+      CONSUMER_KEY = items[0];
+      CONSUMER_SECRET = items[1];
+    }
+
     trends = new ArrayList<String>();   
     followers = new ArrayList<String>();
     friends = new ArrayList<String>();
@@ -4878,48 +5425,50 @@ class Twitter {
         twitterBuffer[2] = CONSUMER_KEY;
         twitterBuffer[3] = CONSUMER_SECRET;
         twitterBuffer[4] = userID;
-        saveLocal("twitter.txt", twitterBuffer);
-        } else {
-          try {
-            String[] twitterBuffer = loadLocal("twitter.txt");
-            if (twitterBuffer.length == 5) {
-              TOKEN = twitterBuffer[0];
-              TOKEN_SECRET = twitterBuffer[1];
-              CONSUMER_KEY = twitterBuffer[2];
-              CONSUMER_SECRET = twitterBuffer[3];
-              userID =  twitterBuffer[4];
-              loggedin = true;
-              } else {
-                println("error reading twitter credentials");
-              }
-            } 
-            catch (Exception E) {
-              println("authenticating twitter");
-              runInitializeOAuthChoreo();
-              authenticating = true;
-            }
+        saveStrings("tmp/twitter.txt", twitterBuffer);
+      } 
+      else {
+        try {
+          String[] twitterBuffer = loadStrings("tmp/twitter.txt");
+          if (twitterBuffer.length == 5) {
+            TOKEN = twitterBuffer[0];
+            TOKEN_SECRET = twitterBuffer[1];
+            CONSUMER_KEY = twitterBuffer[2];
+            CONSUMER_SECRET = twitterBuffer[3];
+            userID =  twitterBuffer[4];
+            loggedin = true;
+          } 
+          else {
+            println("error reading twitter credentials");
           }
+        } 
+        catch (Exception E) {
+          println("authenticating twitter");
+          runInitializeOAuthChoreo();
+          authenticating = true;
         }
+      }
+    }
 
-        if (loggedin) {
-          JSONObject show = runShowChoreo(userID);
-          screenName= show.getString("screen_name");
-          description = show.getString("description");
-          name = show.getString("name");
-          if (!show.isNull("profile_location")) location = show.getJSONObject("profile_location").getString("name");
-          profileImageUrl = show.getString("profile_image_url_https");
-          String ext = profileImageUrl.substring(profileImageUrl.length()-4, profileImageUrl.length());
-          if (profileImageUrl.contains("_normal")) profileImageUrl = profileImageUrl.substring(0, profileImageUrl.length()-11)+ext;  
-          img = loadLocalImage(userID+".png");
-          if (img == null) {
-            img = loadImage(profileImageUrl);
-            saveLocal(userID+".png", img);
-          }   
-          status = show.getJSONObject("status").getString("text");
-          lastUpdated = show.getString("created_at");
-          if (!show.getJSONObject("status").isNull("extended_entities")) {
-            mediaUrl = show.getJSONObject("status").getJSONObject("extended_entities").getJSONArray("media").getJSONObject(0).getString("media_url");
-            if (mediaUrl != null) {
+    if (loggedin) {
+      JSONObject show = runShowChoreo(userID);
+      screenName= show.getString("screen_name");
+      description = show.getString("description");
+      name = show.getString("name");
+      if (!show.isNull("profile_location")) location = show.getJSONObject("profile_location").getString("name");
+      profileImageUrl = show.getString("profile_image_url_https");
+      String ext = profileImageUrl.substring(profileImageUrl.length()-4, profileImageUrl.length());
+      if (profileImageUrl.contains("_normal")) profileImageUrl = profileImageUrl.substring(0, profileImageUrl.length()-11)+ext;  
+      img = loadImage("tmp/"+userID+"/"+userID+".png");
+      if (img == null) {
+        img = loadImage(profileImageUrl);
+        saveLocal(userID+".png", img);
+      }   
+      status = show.getJSONObject("status").getString("text");
+      lastUpdated = show.getString("created_at");
+      if (!show.getJSONObject("status").isNull("extended_entities")) {
+        mediaUrl = show.getJSONObject("status").getJSONObject("extended_entities").getJSONArray("media").getJSONObject(0).getString("media_url");
+        if (mediaUrl != null) {
           // img = loadImage (mediaUrl);   ////////////  this is only if there is media in the latest status!!!
         }
       }
@@ -4996,7 +5545,7 @@ class Twitter {
   public JSONObject runShowChoreo(String thisUserID) {
     JSONObject result;
     try {
-      String[] showBuffer = loadLocal(thisUserID+".txt");
+      String[] showBuffer = loadStrings("tmp/"+thisUserID+"/"+thisUserID+".txt");
       result = JSONObject.parse(concatenate(showBuffer));
     } 
     catch (Exception E) {
@@ -5010,7 +5559,7 @@ class Twitter {
       String showBuffer = showResults.getResponse();
       String[] tmp = new String[1];
       tmp[0] = showBuffer;
-      saveLocal(thisUserID+".txt", tmp);    
+      saveStrings("tmp/"+thisUserID+"/"+thisUserID+".txt", tmp);    
       result = JSONObject.parse(showBuffer);
       // println(showResults.getLimit());
       // println(showResults.getRemaining());
@@ -5021,9 +5570,18 @@ class Twitter {
 }
 char DOUBLE_QUOTE = 34;
 
+public String filterNumber(String thisString) {
+  String result = "";
+  for (int i = 0; i < thisString.length(); i++) {
+    char thisChar = thisString.charAt(i);
+    if (thisChar >= 48 && thisChar <= 58 || thisChar == '-' || thisChar == '+' || thisChar =='x') result += thisChar;
+  }
+  return result;
+}
+
 public String concatenate(String[] content) {
   String result="";
-  for(int i=0; i<content.length;i++){
+  for(int i = 0; i < content.length; i++){
     result += content[i];
   }
   return result;
@@ -5032,7 +5590,7 @@ public String concatenate(String[] content) {
 public int countChar(String str, char c){
   if (str.length() == 0 || str == null) return 0;
   int count = 0;
-  for (int i=0; i<str.length(); i++) {
+  for (int i = 0; i < str.length(); i++) {
     if(str.charAt(i) == c) count ++;
   }
   return count;
@@ -5064,15 +5622,12 @@ public String removeQuotes(String str) {
 }
 
 public String removeSpaces(String str) {
-  if (str.length() > 0) {
-    if (str.charAt(0) == ' ') {
-      str = str.substring(1, str.length());
-    }
+  while (str.length() > 0 && (str.charAt(0) == ' ' || str.charAt(0) == TAB)) {
+    str = str.substring(1, str.length());
+
   }
-  if (str.length() > 0) {
-    if (str.charAt(str.length()-1) == ' ') {
-      str = str.substring(0, str.length()-1);
-    }
+  while (str.length() > 0 && (str.charAt(str.length()-1) == ' ' || str.charAt(str.length()-1) == TAB)) {
+    str = str.substring(0, str.length()-1);
   }
   return str;
 }
@@ -5095,41 +5650,41 @@ public String encode(String name) {
   String encoded = null;
   try { 
     encoded = java.net.URLEncoder.encode(name, "UTF-8"); 
-  } catch (Exception e) {
+    } catch (Exception e) {
 
+    }
+    return encoded;
   }
-  return encoded;
-}
 
-public String getHeading(float deg) {
-  String[] directions = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", 
-  "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
-  int i = PApplet.parseInt((deg + 11.25f)/22.5f);
-  return directions[i % 16];
-}
+  public String getHeading(float deg) {
+    String[] directions = {"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", 
+    "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"};
+    int i = PApplet.parseInt((deg + 11.25f)/22.5f);
+    return directions[i % 16];
+  }
 
-public String getCoordinate(double coordinate, boolean isLat) {
-  char hemisphere = coordinate < 0 ? (isLat ? 'S' : 'W') : (isLat ? 'N' : 'E');
-  float coord = (float)coordinate; 
-  coord = abs(coord);
-  int degrees = PApplet.parseInt(coord);         
-  float minutesFromRemainder = (coord - degrees) * 60;      
-  int minutes = PApplet.parseInt(minutesFromRemainder);      
-  float secondsFromRemainder = ( minutesFromRemainder - minutes ) * 60;  
-  int seconds = PApplet.parseInt( secondsFromRemainder);
-  return (degrees+"\u00b0" + nf(minutes, 2, 0) + "'" + nf(seconds, 2, 0) + DOUBLE_QUOTE +""+hemisphere);
-}
+  public String getCoordinate(double coordinate, boolean isLat) {
+    char hemisphere = coordinate < 0 ? (isLat ? 'S' : 'W') : (isLat ? 'N' : 'E');
+    float coord = (float)coordinate; 
+    coord = abs(coord);
+    int degrees = PApplet.parseInt(coord);         
+    float minutesFromRemainder = (coord - degrees) * 60;      
+    int minutes = PApplet.parseInt(minutesFromRemainder);      
+    float secondsFromRemainder = ( minutesFromRemainder - minutes ) * 60;  
+    int seconds = PApplet.parseInt( secondsFromRemainder);
+    return (degrees+"\u00b0" + nf(minutes, 2, 0) + "'" + nf(seconds, 2, 0) + DOUBLE_QUOTE +""+hemisphere);
+  }
 
-public float getCelcius(float temp) {
-  temp -= 32;
-  temp /= 1.8f;
-  return temp;
-}
+  public float getCelcius(float temp) {
+    temp -= 32;
+    temp /= 1.8f;
+    return temp;
+  }
 
-public String getStringDate(String separator) {
-  String result = "";
-  String day_ = nf(time.day, 2, 0);
-  String month_ = nf(time.month, 2, 0);
+  public String getStringDate(String separator) {
+    String result = "";
+    String day_ = nf(time.day, 2, 0);
+    String month_ = nf(time.month, 2, 0);
   String year_ = (""+time.year);//.substring(2,4);
   result += month_;
   result +=  separator;
@@ -5155,34 +5710,32 @@ public String getStringTime(boolean am_pm, String separator) {
     result += second_.charAt(1);
     if (hour() >= 12) {
       result += " PM";
-    } else {
-      result += " AM";
+      } else {
+        result += " AM";
+      }
+      }   else {
+        String hour_ = nf(hour(), 2, 0);
+        result += hour_.charAt(0);
+        result +=  hour_.charAt(1);
+        result +=  ". ";
+        String minute_ = nf(minute(), 2, 0);
+        result += minute_.charAt(0);
+        result += minute_.charAt(1);
+        result += ". ";
+        String second_ = nf(second(), 2, 0 );
+        result += second_.charAt(0);
+        result += second_.charAt(1);
+      }
+      return result;
     }
-  }   else {
-    String hour_ = nf(hour(), 2, 0);
-    result += hour_.charAt(0);
-    result +=  hour_.charAt(1);
-    result +=  ". ";
-    String minute_ = nf(minute(), 2, 0);
-    result += minute_.charAt(0);
-    result += minute_.charAt(1);
-    result += ". ";
-    String second_ = nf(second(), 2, 0 );
-    result += second_.charAt(0);
-    result += second_.charAt(1);
-  }
-  return result;
-}
 
 
-public float attract(float val, float target, float ratio, float snap) {
-  float result =  val + ((target-val)*ratio);
-  if (abs(result-target) < snap) result = target;
-  return result;
-} 
-
-
-  public void settings() {  size(displayWidth, 700, OPENGL);  pixelDensity(displayDensity()); }
+    public float attract(float val, float target, float ratio, float snap) {
+      float result =  val + ((target-val)*ratio);
+      if (abs(result-target) < snap) result = target;
+      return result;
+    } 
+  public void settings() {  size(displayWidth, 800, OPENGL);  pixelDensity(displayDensity()); }
   static public void main(String[] passedArgs) {
     String[] appletArgs = new String[] { "tele_master_java" };
     if (passedArgs != null) {

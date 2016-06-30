@@ -54,6 +54,34 @@ class TickerDisplay extends Display {
     clearDisplay();
   }
 
+
+  void display() {
+    update();
+    if (manager.channel == ORIENTATION) {
+      targetRot = radians(ticker.comm.ay);
+      rot += (targetRot-rot)*.1;
+      rotate(rot);
+    }
+    strokeWeight(thickStroke);
+    stroke(0);
+    fill(255);
+    shape(outline, 0, 0);
+    fill(backgroundColor);
+    shape(outline_mask, 0, 0);
+    fill(redColor);
+    noStroke();
+    float currentX = -546;
+    for (int i=0; i < CHARS; i++) {
+      pushMatrix();
+      translate(currentX, 36);
+      scale(.16);
+      drawChar(dis[i]);
+      if (dec[i]) drawChar('.');
+      currentX += 35;
+      popMatrix();
+    }
+  }
+
   char getEqChar(int val) {
     return eqChars[val];
   }
@@ -182,117 +210,115 @@ class TickerDisplay extends Display {
       } 
       dis[cursorX++] = '%';
       dis[cursorX++] = ' ';
-      dis[cursorX++] = nf(ticker.comm.battery*100,3,0).charAt(0);
+      dis[cursorX++] = nf(ticker.comm.battery*100, 3, 0).charAt(0);
       dec[cursorX-1] = true;
-      dis[cursorX++] = nf(ticker.comm.battery*100,3,0).charAt(1);
-      dis[cursorX++] = nf(ticker.comm.battery*100,3,0).charAt(2);
+      dis[cursorX++] = nf(ticker.comm.battery*100, 3, 0).charAt(1);
+      dis[cursorX++] = nf(ticker.comm.battery*100, 3, 0).charAt(2);
       dis[cursorX++] = 131; 
 
       if (ticker.comm.charging) {
         if (millis() > chargingNext) {    
-         chargingX ++;
-         chargingNext = millis() + chargingSpeed;
-         if (chargingX >= batIndex + 1) {
-          chargingNext = millis() + chargingSpeed * 4;
-          chargingX = -1;
+          chargingX ++;
+          chargingNext = millis() + chargingSpeed;
+          if (chargingX >= batIndex + 1) {
+            chargingNext = millis() + chargingSpeed * 4;
+            chargingX = -1;
+          }
         }
-      }
-      dis[0] = chargingX > 0 ? 130 : '[';
-      for (int i = 1; i < batLong - 1; i++) {
-        dis[i] =  i < chargingX ? char(130) : char(128);
-      }
-      dis[batLong - 1] = chargingX >= 10 ? 130 : ']';
+        dis[0] = chargingX > 0 ? 130 : '[';
+        for (int i = 1; i < batLong - 1; i++) {
+          dis[i] =  i < chargingX ? char(130) : char(128);
+        }
+        dis[batLong - 1] = chargingX >= 10 ? 130 : ']';
+        } else {
+          dis[0] = batIndex == 0 ? '[' : 130;
+          for (int i = 1; i < batLong - 1; i++) {
+            dis[i] =  i < batIndex ?  char(130) : char(128);
+          }
+          dis[batLong - 1] = batIndex == 10 ? 130 : ']';
+        }
 
-    } 
-    else {
-      dis[0] = batIndex == 0 ? '[' : 130;
-      for (int i = 1; i < batLong - 1; i++) {
-        dis[i] =  i < batIndex ?  char(130) : char(128);
-      }
-      dis[batLong - 1] = batIndex == 10 ? 130 : ']';
-    }
+        cursorX++;
+        if (ticker.comm.battery < 3.40 && !ticker.comm.charging && millis() % 1000 < 500) {
+          data = "LOW BATTERY";
+          for (int i = 0; i < data.length(); i++) {
+            dis[cursorX++] = data.charAt(i);
+          }
+        }
+        break;
 
-    cursorX++;
-    if (ticker.comm.battery < 3.40 && !ticker.comm.charging && millis() % 1000 < 500) {
-      data = "LOW BATTERY";
-      for (int i = 0; i < data.length(); i++) {
-        dis[cursorX++] = data.charAt(i);
-      }
-    }
-    break;
+        case RANDOM:
+        if (millis() > lastTick + tick) {
+          lastTick = millis();
+          clearDisplay();
+          for (int i = 0; i < CHARS; i++) {
+            switch (tack) {
+              case 0:
+              dis[i] = char(int(48 + random(10)));
+              break;
+              case 1:
+              dis[i] = char(int(65 + random(28)));
+              break;
+              case 2:
+              dis[i] = char(int(0 + random(128)));
+              break;
+              case 3:
+              dis[i] = char(int(random(15)));
+              break;
+              case 4:
+              dec[i] = random(10) < 5;
+              break;
+            }
+          }
+        }
+        break;
 
-    case RANDOM:
-    if (millis() > lastTick + tick) {
-      lastTick = millis();
-      clearDisplay();
-      for (int i = 0; i < CHARS; i++) {
-        switch (tack) {
+        case LOOK:
+        clearDisplay();
+        int eyesX = 0;
+        boolean eyesB = millis() % 1200 < 300;
+        face = tack-65;
+        faceClosed = teck-65;
+        dis[eyesX] = !eyesB ?  char(leftEyes[face]) : char(leftEyes[faceClosed]);
+        dis[eyesX + 1] = !eyesB ?  char(rightEyes[face]) : char(rightEyes[faceClosed]) ;
+        dec[eyesX] = true;
+        break;
+
+        case SLEEP:
+        clearDisplay();
+        switch (zzz) {
           case 0:
-          dis[i] = char(int(48 + random(10)));
           break;
           case 1:
-          dis[i] = char(int(65 + random(28)));
+          dis[0] = 'z';
           break;
           case 2:
-          dis[i] = char(int(0 + random(128)));
+          dis[0] = 'z';
+          dis[1] = 'z';
           break;
-          case 3:
-          dis[i] = char(int(random(15)));
-          break;
-          case 4:
-          dec[i] = random(10) < 5;
+          case 3 :
+          dis[0] = 'z';
+          dis[1] = 'z';
+          dis[2] = 'z';
           break;
         }
-      }
-    }
-    break;
-
-    case LOOK:
-    clearDisplay();
-    int eyesX = 0;
-    boolean eyesB = millis() % 1200 < 300;
-    face = tack-65;
-    faceClosed = teck-65;
-    dis[eyesX] = !eyesB ?  char(leftEyes[face]) : char(leftEyes[faceClosed]);
-    dis[eyesX + 1] = !eyesB ?  char(rightEyes[face]) : char(rightEyes[faceClosed]) ;
-    dec[eyesX] = true;
-    break;
-
-    case SLEEP:
-    clearDisplay();
-    switch (zzz) {
-      case 0:
-      break;
-      case 1:
-      dis[0] = 'z';
-      break;
-      case 2:
-      dis[0] = 'z';
-      dis[1] = 'z';
-      break;
-      case 3 :
-      dis[0] = 'z';
-      dis[1] = 'z';
-      dis[2] = 'z';
-      break;
-    }
-    if (millis() > nextZ) {
-      zzz += zzzD;
-      if (zzz == 3) zzzD = -1;
-      if (zzz == 0) zzzD = 1;
-      nextZ = millis() + 60;
-      if (zzz == 0) {
-        zzzC ++;
-        if (zzzC % 2 == 0) {
-          nextZ += 3000;
+        if (millis() > nextZ) {
+          zzz += zzzD;
+          if (zzz == 3) zzzD = -1;
+          if (zzz == 0) zzzD = 1;
+          nextZ = millis() + 60;
+          if (zzz == 0) {
+            zzzC ++;
+            if (zzzC % 2 == 0) {
+              nextZ += 3000;
+            }
+          }
         }
-      }
-    }
-    break;
+        break;
 
-    case SCROLL:
-    if (millis() > lastTick + tick) {
-      lastTick = millis();
+        case SCROLL:
+        if (millis() > lastTick + tick) {
+          lastTick = millis();
         if (cursorX < breakX ) {    /// scroll right
           cursorX ++;
           for (int i = 0; i < CHARS-1; i++) {
@@ -310,155 +336,152 @@ class TickerDisplay extends Display {
                 breakX --;
               }
             }
+            } else {
+              dis[CHARS - 1] = ' ';
+              dec[CHARS - 1] = false;
+            }
           } 
-          else {
-            dis[CHARS - 1] = ' ';
-            dec[CHARS - 1] = false;
-          }
-        } 
-        else if (cursorX > breakX ) {   /// scroll left
-          cursorX --;
-          for (int i = CHARS-1; i > 0; i--) {
-            dis[i] = dis[i - 1];
-            dec[i] = dec[i - 1];
-          }
+          else if (cursorX > breakX ) { 
+            cursorX --;
+            for (int i = CHARS-1; i > 0; i--) {
+              dis[i] = dis[i - 1];
+              dec[i] = dec[i - 1];
+            }
 
-          if (data.length() > 0) {
-            dis[0] = data.charAt(data.length()-1);
-            dec[0] = false;
-            data = data.substring(0, data.length()-1);
-            // if (data.length() > 0) {
-            //   if (data.charAt(0) == '.' && dis [CHARS-2] != '.') {
-            //     dec[CHARS - 1] = true;
-            //     data = data.substring(1, data.length());
-            //     breakX --;
-            //   }
-            // }
-          } 
-          else {
-            dis[0] = ' ';
-            dec[0] = false;
-          }
-        } 
-        else {
-          busy = false;
-        }
-      }
-      break;
-
-      case TICKER:      
-      if (millis() - lastTick > tick) {
-        lastTick = millis();
-        if (data.length() > 0) {
-          if (breakX == 0) {
-            clearDisplay();
-            breakX = data.length();
-            if (breakX > CHARS) breakX = findLastChar(data.substring(0, CHARS), ' ');
-            if (breakX == 0) breakX = data.length();
-            if (breakX > CHARS) breakX = CHARS;
-            if (data.charAt(0) == ' ' && data.length() > 1) data = data.substring(1, data.length());
-          }
-          dis[cursorX] = data.charAt(0);
-          data = data.substring(1, data.length());
-          if (data.length() > 0) {
-            if (data.charAt(0) == '.' && dis[cursorX] != '.') {
-              dec[cursorX] = true;
-              data = data.substring(1, data.length());
-              breakX --;
-              if (data.length() == 0) {
-                lastTick = millis() + tock*100;
-              }
+            if (data.length() > 0) {
+              dis[0] = data.charAt(data.length()-1);
+              dec[0] = false;
+              data = data.substring(0, data.length()-1);
+              // if (data.length() > 0) {
+              //   if (data.charAt(0) == '.' && dis [CHARS-2] != '.') {
+              //     dec[CHARS - 1] = true;
+              //     data = data.substring(1, data.length());
+              //     breakX --;
+              //   }
+              // }
+            } 
+            else {
+              dis[0] = ' ';
+              dec[0] = false;
             }
           } 
           else {
-            lastTick = millis() + tock*100;
+            busy = false;
           }
-          cursorX ++;
-          if (cursorX == breakX) {
-            breakX = 0;
-            if (data.length()>0) {
+        }
+        break;
+
+        case TICKER:      
+        if (millis() - lastTick > tick) {
+          lastTick = millis();
+          if (data.length() > 0) {
+            if (breakX == 0) {
+              clearDisplay();
+              breakX = data.length();
+              if (breakX > CHARS) breakX = findLastChar(data.substring(0, CHARS), ' ');
+              if (breakX == 0) breakX = data.length();
+              if (breakX > CHARS) breakX = CHARS;
+              if (data.charAt(0) == ' ' && data.length() > 1) data = data.substring(1, data.length());
+            }
+            dis[cursorX] = data.charAt(0);
+            data = data.substring(1, data.length());
+            if (data.length() > 0) {
+              if (data.charAt(0) == '.' && dis[cursorX] != '.') {
+                dec[cursorX] = true;
+                data = data.substring(1, data.length());
+                breakX --;
+                if (data.length() == 0) {
+                  lastTick = millis() + tock*100;
+                }
+              }
+            } 
+            else {
               lastTick = millis() + tock*100;
             }
-            if (dis[cursorX - 1] == ' ') cursorX --;
-          }
-        } 
-        else {
-          busy = false;
-        }
-      }
-      if (cursorX < CHARS && cursorX >= 0) dis[cursorX] = millis() % 500 < 250 ? ' ' : '_';
-      break;
-
-      case RAIN:
-      if (millis() - lastTick > tick * 10 ) {
-        lastTick = millis();
-        for (int i = 0; i < CHARS; i++) {
-          if (dis[i] == ' ') {
-            if (random(100) < tock) dis[i] = 10;
+            cursorX ++;
+            if (cursorX == breakX) {
+              breakX = 0;
+              if (data.length()>0) {
+                lastTick = millis() + tock*100;
+              }
+              if (dis[cursorX - 1] == ' ') cursorX --;
+            }
           } 
-          else if (dis[i] == 10) {
-            dis[i] = 11;
-            if (random(100) < 70) dis[i] = '/';
-          } 
-          else if (dis[i] == 11) {
-            dis[i] = ' ';
-          } 
-          else if (dis[i] == '/') {
-            dis[i] = 11;
-            if (random(100) < 30) dis[i] = '/';
+          else {
+            busy = false;
           }
         }
-      }
-      break;
+        if (cursorX < CHARS && cursorX >= 0) dis[cursorX] = millis() % 500 < 250 ? ' ' : '_';
+        break;
 
-      case SNOW:
-      // tack fall
-      // teck wind
-      // tick speed
-      // tock intensity
-
-
-      if (millis() - lastTick > tick * 10 ) {
-        lastTick = millis();
-        for (int i = 0; i < CHARS; i++) {
-          if (random(100) < 70 && dis[i] > 7 && dis[i] < 14) {
-            dis[i] = (char)32;
-          }
-          switch (dis[i]) {
-            case (char)141:
-            dis[i] = (char)137;
-            break;
-            case (char)142:
-            dis[i] = (char)138;
-            break;
-            case (char)143:
-            dis[i] = (char)139;
-            break;
-            case (char)144:
-            dis[i] = (char)140;
-            break;
-            case (char)8:
-            dis[i] = (char)137;
-            break;
-            case (char)10:
-            dis[i] = (char)138;
-            break;
-            case (char)11:
-            dis[i] = (char)139;
-            break;
-            case (char)13:
-            dis[i] = (char)140;
-            break;
-          }
-          if (dis[i] == (char)32 && random(100) < tock) {
-            dis[i] = random(100) < 50 ? (char)137 : (char)138;
-          }
-          if (random(100) < 1) {
-            dis[i] = ' ';
+        case RAIN:
+        if (millis() - lastTick > tick * 10 ) {
+          lastTick = millis();
+          for (int i = 0; i < CHARS; i++) {
+            if (dis[i] == ' ') {
+              if (random(100) < tock) dis[i] = 10;
+            } 
+            else if (dis[i] == 10) {
+              dis[i] = 11;
+              if (random(100) < 70) dis[i] = '/';
+            } 
+            else if (dis[i] == 11) {
+              dis[i] = ' ';
+            } 
+            else if (dis[i] == '/') {
+              dis[i] = 11;
+              if (random(100) < 30) dis[i] = '/';
+            }
           }
         }
-        for (int i = 0; i < CHARS; i++) {
-          // WIND
+        break;
+
+        case SNOW:
+        // tack fall
+        // teck wind
+        // tick speed
+        // tock intensity
+
+        if (millis() - lastTick > tick * 10 ) {
+          lastTick = millis();
+          for (int i = 0; i < CHARS; i++) {
+            if (random(100) < 70 && dis[i] > 7 && dis[i] < 14) {
+              dis[i] = (char)32;
+            }
+            switch (dis[i]) {
+              case (char)141:
+              dis[i] = (char)137;
+              break;
+              case (char)142:
+              dis[i] = (char)138;
+              break;
+              case (char)143:
+              dis[i] = (char)139;
+              break;
+              case (char)144:
+              dis[i] = (char)140;
+              break;
+              case (char)8:
+              dis[i] = (char)137;
+              break;
+              case (char)10:
+              dis[i] = (char)138;
+              break;
+              case (char)11:
+              dis[i] = (char)139;
+              break;
+              case (char)13:
+              dis[i] = (char)140;
+              break;
+            }
+            if (dis[i] == (char)32 && random(100) < tock) {
+              dis[i] = random(100) < 50 ? (char)137 : (char)138;
+            }
+            if (random(100) < 1) {
+              dis[i] = ' ';
+            }
+          }
+          for (int i = 0; i < CHARS; i++) {
           int wind = (int)(-2 + random(teck*2)); //-x * 40;
           if (random(100) < abs(wind)) {
             if (teck > 0) {
@@ -511,7 +534,6 @@ class TickerDisplay extends Display {
             }
           } 
           else {
-            // FALL
             if (random(100) < tack) {
               if (dis[i] == (char)137) {
                 dis[i] = 139;
@@ -528,7 +550,7 @@ class TickerDisplay extends Display {
             }
           }
         }
-        if (random(100) < 50)  {
+        if (random(100) < 50) {
           for (int i = 0; i < CHARS; i++) {
             if (random(100) < 80) {
               switch (dis[i]) {
@@ -545,8 +567,8 @@ class TickerDisplay extends Display {
                 dis[i] = (char)144;
                 break;
               }
-            }  
-            else  {
+            } 
+            else {
               switch (dis[i]) {
                 case (char)137:
                 dis[i] = (char)8;
@@ -569,33 +591,6 @@ class TickerDisplay extends Display {
     }
   }
 
-  void display() {
-    update();
-    if (manager.channel == ORIENTATION) {
-      targetRot = radians(ticker.comm.ay);
-      rot += (targetRot-rot)*.1;
-      rotate(rot);
-    }
-    strokeWeight(thick);
-    stroke(0);
-    fill(255);
-    shape(outline, 0, 0);
-    fill(backgroundColor);
-    shape(outline_mask, 0, 0);
-    fill(redColor);
-    noStroke();
-    float currentX = -546;
-    for (int i=0; i < CHARS; i++) {
-      pushMatrix();
-      translate(currentX, 36);
-      scale(.16);
-      drawChar(dis[i]);
-      if (dec[i]) drawChar('.');
-      currentX += 35;
-      popMatrix();
-    }
-  }
-
   void printString(String thisString, int thisMode, int thisTack, int thisTeck, int thisTick, int thisTock, int thisTuck) {
     data = thisString;
     if (thisMode != PING) {
@@ -606,7 +601,7 @@ class TickerDisplay extends Display {
       tock = thisTock;
       tuck = thisTuck;
     }
-    busy = true;
+    busy = false;
 
     lastTick = millis();
 
@@ -614,17 +609,16 @@ class TickerDisplay extends Display {
 
       case LOADING:
       clearDisplay();
-      busy = false;
       break;
 
       // case ALPHABET:
       // clearDisplay();
       // busy = false;
 
-      // case BRIGHTNESS:
-      // clearDisplay();
-      // break;
-      
+      case BRIGHTNESS:
+      clearDisplay();
+      break;
+
       // case BATTERY:
       // clearDisplay();
       // break;
@@ -635,17 +629,18 @@ class TickerDisplay extends Display {
 
       case SNOW:
       clearDisplay();
-      busy = false;
       break;
 
       case RAIN:
       clearDisplay();
-      busy = false;
       break;
 
       case BLANK:
       clearDisplay();
-      busy = false;
+      break;
+
+      case SLEEP:
+      clearDisplay();
       break;
 
       case INSTANT:
@@ -661,7 +656,6 @@ class TickerDisplay extends Display {
         }
         cursorX ++;
       }
-      busy = false;
       break;
 
       case STREAM:
@@ -671,7 +665,6 @@ class TickerDisplay extends Display {
           dec[i] = false;
         }
       }
-      busy = false;
       break;
 
       case CENTERED:
@@ -688,23 +681,25 @@ class TickerDisplay extends Display {
         }
         cursorX ++;
       }
-      busy = false;
       break;
 
       case TICKER:
       breakX = 0;
+      busy = true;
       break;
 
       case SCROLL_ALL_RIGHT:
       cursorX = 0;
       breakX = CHARS + data.length();
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_CENTER_RIGHT:
       cursorX = 0;
       breakX = ((CHARS - data.length()) / 2) + data.length();
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_PUSH_RIGHT:
@@ -728,18 +723,21 @@ class TickerDisplay extends Display {
         }
       } 
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_ALL_LEFT:
       cursorX = 0;
       breakX = -CHARS - data.length();
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_CENTER_LEFT:
       cursorX = 0;
       breakX = -((CHARS - data.length()) / 2) - data.length();
       mode = SCROLL;
+      busy = true;
       break;
 
       case SCROLL_PUSH_LEFT:
@@ -764,12 +762,14 @@ class TickerDisplay extends Display {
         }
       } 
       mode = SCROLL;
+      busy = true;
       break;
 
       case AIRPORT:
       for (int i = data.length(); i < CHARS; i++) {
         data += " ";
       }
+      busy = true;      
       break;
     }
   }
@@ -787,10 +787,10 @@ class TickerDisplay extends Display {
   }
 
   void clearDisplay() {
-    for (int i=0; i < CHARS; i++) {
+    for (int i = 0; i < CHARS; i++) {
       dis[i] = ' ';
-      dec[i] = false;
     }
+    dec = new boolean[CHARS];
     cursorX = 0;
   }
 
@@ -802,7 +802,7 @@ class TickerDisplay extends Display {
     String res = "";
     for (int i=0; i<str.length(); i++) {
       char ch = str.charAt(i);
-      if (ch == '&'){
+      if (ch == '&') {
         if (str.charAt(i+1) == '#') {
           ch = 39;
           i = i+6;
@@ -819,17 +819,13 @@ class TickerDisplay extends Display {
       if (invalid.indexOf(ch) != -1) {
         ch = subs.charAt(invalid.indexOf(ch));
       }
-      // if (ch > 127) {
-      //   ch = 39;
-      // }
+
       if (valid.indexOf(ch) != -1) {
         res +=  ch;
       } 
       else {
         res += char(39);//'-';
-        //ch = 39;
       }
-
     }
     return res;
   }

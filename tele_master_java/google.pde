@@ -2,12 +2,8 @@
 // GOOGLE
 ////////////////////////
 
-//String CLIENT_ID = "113132524761-9vc5rqbcbqjq79msolp7iaki9vbehqsl.apps.googleusercontent.com";
-//String CLIENT_SECRET = "wB14XMGd7Ju_CZZh9Q3ukrwY";
-//String REFRESH_TOKEN = "1/hSZSH0vYOnV1kegywSyJUcxaTgGPv8pWcq1K_KtVouAMEudVrK5jSpoR30zcRFq6";
-
-String CLIENT_ID = "113132524761-c5gg9a8m6tq7nus1iad89enfk3t2lfjv.apps.googleusercontent.com";
-String CLIENT_SECRET = "iLxRPab7WJpdXJeLN8MjeqY_";
+String CLIENT_ID;// = "113132524761-c5gg9a8m6tq7nus1iad89enfk3t2lfjv.apps.googleusercontent.com";
+String CLIENT_SECRET;//  = "iLxRPab7WJpdXJeLN8MjeqY_";
 String REFRESH_TOKEN;
 String ACCESS_TOKEN;
 String CALLBACK_ID;
@@ -17,9 +13,14 @@ class Google {
   boolean logging;
   boolean authenticating;
 
-  String[] credentials;
+  String[] keys;
 
   Google() {
+    if (credentials.credentials != null) {
+      String[] items = splitTokens(credentials.credentials[1], ",");
+      CLIENT_ID = items[0];
+      CLIENT_SECRET = items[1];
+    }
     //login();
   }
 
@@ -31,86 +32,86 @@ class Google {
       loggedin = true;
       logging = false;
       manager.setChannel(GOOGLE);
-      } else {
-        authenticate();
-      }
-    }
-
-    void logout() {
-      deleteFile("credentials.txt");
-      loggedin = false;
-      logging = false;
-      authenticating = false;
-      REFRESH_TOKEN = null;
-      ACCESS_TOKEN = null;
-      profile = new Profile();
-      google = new Google();
-      contacts = new GoogleContacts();
-      calendar = new GoogleCalendar();
-    }
-
-    void authenticate() {
-      try {
-        credentials = loadLocal("credentials.txt");
-        if (credentials != null) {
-          REFRESH_TOKEN = credentials[0];
-          ACCESS_TOKEN = credentials[1];
-          println(REFRESH_TOKEN);
-          println(ACCESS_TOKEN);
-        }
-      } 
-      catch (Exception e) {
-        println("error");
-      }
-      if (REFRESH_TOKEN == null) {
-        if (network.online) {
-          runInitializeOAuthChoreo();
-        }
-      } else { //
-        profile.update();
-        loggedin = true;
-        logging = false;
-        manager.setChannel(GOOGLE);
-      }
-    }
-
-    void runInitializeOAuthChoreo() {
-      com.temboo.Library.Google.OAuth.InitializeOAuth initializeOAuthChoreo = new com.temboo.Library.Google.OAuth.InitializeOAuth(session);
-      initializeOAuthChoreo.setClientID(CLIENT_ID);
-      String scopes = "http://www.google.com/m8/feeds/";
-      scopes += " https://www.googleapis.com/auth/drive";
-      scopes += " https://www.googleapis.com/auth/userinfo.email";
-      scopes += " https://www.googleapis.com/auth/userinfo.profile";
-      scopes += " http://www.google.com/m8/feeds/";
-      scopes += " https://spreadsheets.google.com/feeds/";
-      scopes += " https://www.googleapis.com/auth/calendar";
-      scopes += " https://www.googleapis.com/auth/plus.login";
-      scopes += " https://www.googleapis.com/auth/plus.profile.emails.read";
-      scopes += " https://mail.google.com/";
-      initializeOAuthChoreo.setScope(scopes);
-      com.temboo.Library.Google.OAuth.InitializeOAuthResultSet initializeOAuthResults = initializeOAuthChoreo.run();
-      link(initializeOAuthResults.getAuthorizationURL());
-      CALLBACK_ID = initializeOAuthResults.getCallbackID();
-      authenticating = true;
-    }
-
-    void runFinalizeOAuthChoreo() {
-      com.temboo.Library.Google.OAuth.FinalizeOAuth finalizeOAuthChoreo = new com.temboo.Library.Google.OAuth.FinalizeOAuth(session);
-      finalizeOAuthChoreo.setCallbackID(CALLBACK_ID);
-      finalizeOAuthChoreo.setClientID(CLIENT_ID);
-      finalizeOAuthChoreo.setClientSecret(CLIENT_SECRET);
-      com.temboo.Library.Google.OAuth.FinalizeOAuthResultSet finalizeOAuthResults = finalizeOAuthChoreo.run();
-      println(finalizeOAuthResults.getErrorMessage());
-      println(finalizeOAuthResults.getExpires());
-      println(finalizeOAuthResults.getRefreshToken());
-      ACCESS_TOKEN = finalizeOAuthResults.getAccessToken();
-      REFRESH_TOKEN = finalizeOAuthResults.getRefreshToken();
-      credentials = new String[2];
-      credentials[0] = REFRESH_TOKEN;
-      credentials[1] = ACCESS_TOKEN;
-      saveLocal("credentials.txt", credentials);
+    } 
+    else {
+      authenticate();
     }
   }
+
+  void logout() {
+    deleteFile("google.txt");
+    loggedin = false;
+    logging = false;
+    authenticating = false;
+    REFRESH_TOKEN = null;
+    ACCESS_TOKEN = null;
+    profile = new Profile();
+    google = new Google();
+    contacts = new GoogleContacts();
+    calendar = new GoogleCalendar();
+  }
+
+  void authenticate() {
+    try {
+      keys = loadStrings("tmp/google.txt");
+      if (keys != null) {
+        REFRESH_TOKEN = keys[0];
+        ACCESS_TOKEN = keys[1];
+      }
+    } 
+    catch (Exception e) {
+      println("error");
+    }
+    if (REFRESH_TOKEN == null) {
+      if (network.online) {
+        runInitializeOAuthChoreo();
+      }
+    } 
+    else {
+      profile.update();
+      loggedin = true;
+      logging = false;
+      manager.setChannel(GOOGLE);
+    }
+  }
+
+  void runInitializeOAuthChoreo() {
+    com.temboo.Library.Google.OAuth.InitializeOAuth initializeOAuthChoreo = new com.temboo.Library.Google.OAuth.InitializeOAuth(session);
+    initializeOAuthChoreo.setClientID(CLIENT_ID);
+    String scopes = "http://www.google.com/m8/feeds/";
+    scopes += " https://www.googleapis.com/auth/drive";
+    scopes += " https://www.googleapis.com/auth/userinfo.email";
+    scopes += " https://www.googleapis.com/auth/userinfo.profile";
+    scopes += " http://www.google.com/m8/feeds/";
+    scopes += " https://spreadsheets.google.com/feeds/";
+    scopes += " https://www.googleapis.com/auth/calendar";
+    scopes += " https://www.googleapis.com/auth/plus.login";
+    scopes += " https://www.googleapis.com/auth/plus.profile.emails.read";
+    scopes += " https://mail.google.com/";
+    initializeOAuthChoreo.setScope(scopes);
+    com.temboo.Library.Google.OAuth.InitializeOAuthResultSet initializeOAuthResults = initializeOAuthChoreo.run();
+    link(initializeOAuthResults.getAuthorizationURL());
+    CALLBACK_ID = initializeOAuthResults.getCallbackID();
+    authenticating = true;
+  }
+
+  void runFinalizeOAuthChoreo() {
+    com.temboo.Library.Google.OAuth.FinalizeOAuth finalizeOAuthChoreo = new com.temboo.Library.Google.OAuth.FinalizeOAuth(session);
+    finalizeOAuthChoreo.setCallbackID(CALLBACK_ID);
+    finalizeOAuthChoreo.setClientID(CLIENT_ID);
+    finalizeOAuthChoreo.setClientSecret(CLIENT_SECRET);
+    com.temboo.Library.Google.OAuth.FinalizeOAuthResultSet finalizeOAuthResults = finalizeOAuthChoreo.run();
+    println(finalizeOAuthResults.getErrorMessage());
+    println(finalizeOAuthResults.getExpires());
+    println(finalizeOAuthResults.getRefreshToken());
+    ACCESS_TOKEN = finalizeOAuthResults.getAccessToken();
+    REFRESH_TOKEN = finalizeOAuthResults.getRefreshToken();
+    keys = new String[2];
+    keys[0] = REFRESH_TOKEN;
+    keys[1] = ACCESS_TOKEN;
+    saveStrings("tmp/google.txt", keys);
+  }
+}
 
 /////////////////////////////////////
 // PROFILE
@@ -121,6 +122,7 @@ class Profile {
   int minAge;
   PImage img = null;
   boolean updated;
+  long lastUpdated;
 
   Profile () {
   }
@@ -128,7 +130,7 @@ class Profile {
   void update() {
     JSONObject choreo = null;
     try {
-      String[] choreoBuffer = loadLocal("profile.json");
+      String[] choreoBuffer = loadStrings("tmp/profile.json");
       choreo = JSONObject.parse(concatenate(choreoBuffer));
     } 
     catch (Exception e) {
@@ -150,13 +152,13 @@ class Profile {
       language = choreo.getString("language");
       minAge = choreo.getJSONObject("ageRange").getInt("min");
       try {
-        img = loadLocalImage(id+".png");
+        //img = loadLocalImage(id+".png");
       } 
       catch (Exception e) {
       }
       if (img == null) {
-        img = loadImage(url);
-        saveLocal(id+".png", img);
+        //img = loadImage(url);
+        //saveLocal(id+".png", img);
       }
       updated = true;
     }
@@ -265,7 +267,7 @@ class GoogleDrive {
   }
 
   void update() {
-    if (network.online) {
+    if (network.online && false) {
       String logId = "1nDJ7lBSpylE5ORHF6xTntc4N9iqq8m3j_LW7Ok5K8RQ";
       String driveUrl = "https://docs.google.com/spreadsheets/d/"+logId+"/export?format=tsv&id="+logId;
       driveContent = loadUrl(driveUrl);

@@ -98,60 +98,45 @@ void showAirport() {
 }
 
 void showAlphabet() {
-//  clearDisplay();
   for (int i = 0; i < CHARS; i++ ) {
     dis[i] = i + cursorX % 255;
   }
-  cursorX -= pitch/5;
+  cursorX -= pitch / 20;
   updateDisplay();
 }
 
 void showAxis() {
   clearDisplay();
-  rollBuffer[0] = roll >= 0 ? '+' : '-';
-  rollBuffer[1] = char(int(abs(roll) / 100) + 48);
-  rollBuffer[2] = char((int(abs(roll)) / 10 % 10) + 48);
-  rollBuffer[3] = char(int(abs(roll)) % 10) + 48;
-
-  pitchBuffer[0] = pitch >= 0 ? '+' : '-';
-  pitchBuffer[1] = char(int(abs(pitch) / 100) + 48);
-  pitchBuffer[2] = char((int(abs(pitch)) / 10 % 10) + 48);
-  pitchBuffer[3] = char(int(abs(pitch)) % 10) + 48;
-
-  headingBuffer[0] = heading >= 0 ? '+' : '-';
-  headingBuffer[1] = char(int(abs(heading) / 100) + 48);
-  headingBuffer[2] = char((int(abs(heading)) / 10 % 10) + 48);
-  headingBuffer[3] = char(int(abs(heading)) % 10) + 48;
 
   int offsetX = 5;
   dis[0 + offsetX] = 'R';
-  dis[1 + offsetX] = rollBuffer[0];
-  dis[2 + offsetX] = rollBuffer[1];
-  dis[3 + offsetX] = rollBuffer[2];
-  dis[4 + offsetX] = rollBuffer[3];
+  dis[1 + offsetX] = roll >= 0 ? '+' : '-';
+  dis[2 + offsetX] = char(int(abs(roll) / 100) + 48);
+  dis[3 + offsetX] = char((int(abs(roll)) / 10 % 10) + 48);
+  dis[4 + offsetX] = char(int(abs(roll)) % 10) + 48;
 
   dis[8 + offsetX] = 'P';
-  dis[9 + offsetX] = pitchBuffer[0];
-  dis[10 + offsetX] = pitchBuffer[1];
-  dis[11 + offsetX] = pitchBuffer[2];
-  dis[12 + offsetX] = pitchBuffer[3];
+  dis[9 + offsetX] = pitch >= 0 ? '+' : '-';
+  dis[10 + offsetX] = char(int(abs(pitch) / 100) + 48);
+  dis[11 + offsetX] = char((int(abs(pitch)) / 10 % 10) + 48);
+  dis[12 + offsetX] = char(int(abs(pitch)) % 10) + 48;
 
   dis[16 + offsetX] = 'H';
-  dis[17 + offsetX] = headingBuffer[0];
-  dis[18 + offsetX] = headingBuffer[1];
-  dis[19 + offsetX] = headingBuffer[2];
-  dis[20 + offsetX] = headingBuffer[3];
+  dis[17 + offsetX] = heading >= 0 ? '+' : '-';
+  dis[18 + offsetX] = char(int(abs(heading) / 100) + 48);
+  dis[19 + offsetX] = char((int(abs(heading)) / 10 % 10) + 48);
+  dis[20 + offsetX] = char(int(abs(heading)) % 10) + 48;
 
   updateDisplay();
 }
 
 void showSleep() {
   clearDisplay();
-  if (inertia > 8) {
-    mode = LOOK;
-    awakeStart = millis();
-    eyesX = 0;
-  }
+  //  if (inertia > 8) {
+  //    mode = LOOK;
+  //    awakeStart = millis();
+  //    eyesX = 0;
+  //  }
   switch (zzz) {
     case 0:
       break;

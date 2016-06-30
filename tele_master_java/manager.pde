@@ -1,17 +1,3 @@
-final int SCAN = -10;
-final int LOGOUT = -11;
-final int PLAY = -12;
-final int UP = -13;
-final int DOWN = -14;
-final int LEFT = -15;
-final int RIGHT = -16;
-final int LOOP = -27;
-final int JUMP = -18;
-final int DEMO = -19;
-final int SYNC = -20;
-final int OBJECT = -21;
-final int MOBILE = -22;
-
 final int BLANK = 1;
 final int CENTERED = 2;
 final int INSTANT = 3;
@@ -60,25 +46,43 @@ final int COPY_GRADIENT = 75;
 final int REFRESH = 76;
 final int FONT = 77;
 
-final int SETTINGS = 100;
-final int BLUETOOTH = 101;
-final int WIFI = 102;
-final int ONLINE = 103;
-final int ENERGY = 104;
-final int ORIENTATION = 105;
-final int TIME = 106;
-final int EQ = 107;
-final int LOCATION = 108;
-final int NAVIGATION = 109;
-final int RESULTS = 110;
-final int DIM = 111;
-final int HELLO = 150;
-final int BYE = 151;
-final int SEARCH = 152;
+// channels
 
 int demoModes[] = {LOOK, ALPHABET, BALL, RAIN, SNOW, COMPASS, RANDOM};
 int demoMode = 0;
 
+final int SCAN = -10;
+final int LOGOUT = -11;
+final int PLAY = -12;
+final int UP = -13;
+final int DOWN = -14;
+final int LEFT = -15;
+final int RIGHT = -16;
+final int LOOP = -27;
+final int JUMP = -18;
+final int DEMO = -19;
+final int SYNC = -20;
+final int OBJECT = -21;
+//final int MOBILE = -22;
+
+final int SETTINGS = 100;
+final int WIFI = 101;
+final int MOBILE = 102;
+final int ONLINE = 103;
+final int BLUETOOTH = 104;
+final int DIM = 105;
+final int ENERGY = 106;
+final int ORIENTATION = 107;
+final int TIME = 108;
+final int EQ = 109;
+final int LOCATION = 110;
+final int NAVIGATION = 111;
+final int RESULTS = 112;
+
+
+final int HELLO = 150;
+final int BYE = 151;
+final int SEARCH = 152;
 final int GOOGLE = 200;
 final int CONTACTS = 201;
 final int MAIL = 202;
@@ -101,13 +105,13 @@ class Manager {
 
   Manager () {
     String[] commandList = loadStrings("tsv/commands.txt");
-    for (int i=0;i<commandList.length; i++) {
+    for (int i=0; i<commandList.length; i++) {
       String thisLine = commandList[i];
       if (thisLine.length() > 0) {
-        String[] items = splitTokens(thisLine," ");
+        String[] items = splitTokens(thisLine, " ");
         if (items.length == 5) {
           String thisCommand = items[2];
-          int thisCommandNum = parseInt(items[4].substring(0,items[4].length()-1));
+          int thisCommandNum = parseInt(items[4].substring(0, items[4].length()-1));
         }
       }
     }
@@ -119,126 +123,124 @@ class Manager {
   void setChannel(int thisCommand) {
 
     switch(thisCommand) {
-      case UP:
-      // loadUrlThread("http://www.google.com");
+    case UP:
       // if (channel == NAVIGATION) {
       //   places.search(ticker.pages.get(ticker.pageIndex).content);
       //   thisCommand = RESULTS;
       // }
       break;
 
-      case DOWN:
+    case DOWN:
       // if (channel == RESULTS) {
       //   thisCommand = NAVIGATION;
       // }
-      ticker.writeString("loading content", LOADING, 1, 1, 100, 0, 0);
       break;
 
-      case RIGHT:
+    case RIGHT:
       for (Teleobject teleobject : teleobjects) {
         teleobject.nextPage();
       }
       break;
 
-      case LEFT:
+    case LEFT:
       for (Teleobject teleobject : teleobjects) {
         teleobject.previousPage();
       }
       break;
 
-      case LOGOUT:
-      google.logout();
-      break;
-
-      case SCAN:
-      scanDevices();
-      break;
-
-      case SYNC:
-      sync = !sync;
-      break;
-
-      case LOOP:
-      loop = !loop;
-      break;
-
-      case PLAY:  
-      play = !play;
-      break;
-
-      case SETTINGS:
+    case SETTINGS:
       debug = !debug;
       break;
 
-      case MOBILE:
+    case MOBILE:
+      network.update();
+      break;
+
+    case WIFI:
+      network.update();
+      break;
+
+    case ONLINE:
+      network.update();
+      break;
+
+    case BLUETOOTH:
+      bluetooth.scanDevices();
+      break;
+
+    case LOGOUT:
+      google.logout();
+      break;
+
+    case SYNC:
+      sync = !sync;
+      break;
+
+    case LOOP:
+      loop = !loop;
+      break;
+
+    case PLAY:  
+      play = !play;
+      break;
+
+    case OBJECT:
       if (activeObject == null) {
         activeObject = ticker;
-      } 
-      else {
+      } else {
         int nextObject = teleobjects.indexOf(activeObject);
         nextObject ++;
-        if (nextObject > 4)        {
-          activeObject = null;
-        } 
-        else {
+        if (nextObject == teleobjects.size()) {
+          activeObject = null ;
+        } else {
           activeObject = teleobjects.get(nextObject);
         }
       }
       break;
 
-      case LOCATION:
+    case LOCATION:
       geolocation.update();
       break;
 
-      case WEATHER:
+    case WEATHER:
       weather.update();
       break;
 
-      case GOOGLE:
+    case GOOGLE:
       if (!google.loggedin) {
         google.login();
         if (google.authenticating) play = false;
-      } 
-      else {
+      } else {
         play = true;
       }
       break;
 
-      case CONTACTS:
+    case CONTACTS:
       if (!contacts.updated) contacts.update();
       break;
 
-      case MAIL:
+    case MAIL:
       if (!mail.updated) mail.update();
       break;
 
-      case CALENDAR:
+    case CALENDAR:
       if (!calendar.updated) calendar.update();
       break;
 
-      case TWITTER:
+    case TWITTER:
       if (twitter.loggedin) {
         twitter.update();
-      } 
-      else {
+      } else {
         twitter.login();
         twitter.update();
       }
       break;
 
-      case WIFI:
-      network.updateWifi();
-      break;
-
-      case ONLINE:
-      network.updateOnline();
-      break;
-
-      case NEWS:
+    case NEWS:
       if (!news.updated) news.update();
       break;
 
-      case DRIVE:
+    case DRIVE:
       if (!drive.updated || true) drive.update(); // to test...
       break;
     }
@@ -252,8 +254,6 @@ class Manager {
     //   }
     // }
 
-    if (channel == EQ) activeObject.comm.busy = false;
-
     if (thisCommand > 100) {
       channel = thisCommand;
       if (activeObject == null) {
@@ -261,17 +261,19 @@ class Manager {
           teleobject.initPages(channel);
           teleobject.printPages();
           teleobject.pageDelay = 0;
+          teleobject.ready = true;
+          teleobject.display.busy = false;
+          teleobject.comm.busy = false;
         }
-      } 
-      else {
-       activeObject.initPages(channel);
-       activeObject.printPages();
-       activeObject.pageDelay = 0;
-       activeObject.ready = true;
-       activeObject.display.busy = false;
-       activeObject.comm.busy = false;
-     }
-   }
-   gui.refresh = true;
- }
+      } else {
+        activeObject.initPages(channel);
+        activeObject.printPages();
+        activeObject.pageDelay = 0;
+        activeObject.ready = true;
+        activeObject.display.busy = false;
+        activeObject.comm.busy = false;
+      }
+    }
+    gui.refresh = true;
+  }
 }

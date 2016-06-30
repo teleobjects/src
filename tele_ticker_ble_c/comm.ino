@@ -18,7 +18,7 @@ void updateComm() {
     if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) ) {
       ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
     }
-    //        ble.sendCommandCheckOK("AT+BLEPOWERLEVEL=4");
+    ble.sendCommandCheckOK("AT+BLEPOWERLEVEL=4");
     ble.setMode(BLUEFRUIT_MODE_DATA);
   } else {
     connected = false;
@@ -57,25 +57,29 @@ void rx() {
   if (connected) {
     if (buffering && millis() - lastRx > timeOut) {
       buffering = false;
-      charIndex = 0; // get rid of this once bluetooth is working again
+      data = "";
+      responses = 0;
+      busy = false;
+      while (ble.available()) {
+        ble.read(); // empty buffer
+      }
+    }
+    if (ble.available() > 0 && !buffering) {
       data = "";
     }
     while (ble.available()) {
       char c = ble.read();
-      if (c == '\n' || charIndex == BUF_SIZE) {
-        data = "";
-        for (int i = 0; i < charIndex; i++) {
-          data += charIn[i];
+      if (c == '\n' || data.length() > BUF_SIZE) {
+        while (ble.available()) {
+          ble.read(); // empty buffer
         }
-        charIndex = 0;
         parse();
-        buffering = false;
         responses = 0;
+        buffering = false;
       } else {
         lastRx = millis();
         buffering = true;
-        charIn[charIndex] = c;
-        charIndex ++;
+        data += c;
       }
     }
   }
@@ -86,17 +90,14 @@ void rx() {
     }
     while (Serial.available() > 0) {
       char c = Serial.read();
-      if (c == '\n') {
-        parse();
-        responses = 0;
-      }
-      else if (data.length() > BUF_SIZE) { // make sure we don't receive more than we can hold
-        while (Serial.available() > 0) {
-          char c = Serial.read(); // to clean the remaining chars, check better option
-        }
+      if (c == '\n' || data.length() > BUF_SIZE) {
+        //        while (Serial.available() > 0) {
+        //          Serial.read(); // to clean the remaining chars, check better option
+        //        }
         parse();
         responses = 0;
       } else {
+        lastRx = millis();
         data += c;
       }
     }

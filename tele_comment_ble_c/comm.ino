@@ -6,18 +6,9 @@ void initComm() {
   if (!ble.factoryReset() ) {
     Serial.println("Couldn't factory reset");
   }
-  ble.info();
+  //  ble.info();
   ble.verbose(false);
   ble.echo(false);
-  //  while (! ble.isConnected()) {
-  //    delay(500);
-  //  }
-  //  if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) )
-  //  {
-  //    ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
-  //  }
-  //  ble.setMode(BLUEFRUIT_MODE_DATA);
-  //  connected = true;
 }
 
 void updateComm() {
@@ -27,7 +18,7 @@ void updateComm() {
     if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) ) {
       ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
     }
-    //        ble.sendCommandCheckOK("AT+BLEPOWERLEVEL=4");
+    ble.sendCommandCheckOK("AT+BLEPOWERLEVEL=4");
     ble.setMode(BLUEFRUIT_MODE_DATA);
   } else {
     connected = false;
@@ -40,15 +31,15 @@ void tx() {
     lastTx = millis();
     responses ++;
     byteOut[0] = (byte)mode;
-    byteOut[1] = 70;//(byte)(roll < 0 ? 1 : 2);
-    byteOut[2] = 70;//(byte)(int)abs(roll);
-    byteOut[3] = 70;//(byte)(pitch < 0 ? 1 : 2);
-    byteOut[4] = 70;//(byte)(int)abs(pitch);
-    byteOut[5] = 70;//(byte)(heading < 0 ? 1 : 2);
-    byteOut[6] = 70; // (byte)(int)abs(heading);
+    byteOut[1] = 70;
+    byteOut[2] = 70;
+    byteOut[3] = 70;
+    byteOut[4] = 70;
+    byteOut[5] = 70;
+    byteOut[6] = 70;
     byteOut[7] = (byte)voltage - minBat;
     byteOut[8] = (byte)(charging ? 1 : 100);
-    byteOut[9] = 70;//(byte)voltageBuffer[3];
+    byteOut[9] = (byte)brightness;
     byteOut[10] = (byte)254;
     if (DEBUG) {
       Serial.write(byteOut, sizeof(byteOut));
@@ -65,54 +56,51 @@ void tx() {
 
 void rx() {
   if (connected) {
-
+    if (buffering && millis() - lastRx > timeOut) {
+      buffering = false;
+      data = "";
+      responses = 0;
+      busy = false;
+      while (ble.available()) {
+        ble.read(); // empty buffer
+      }
+    }
+    if (ble.available() > 0 && !buffering) {
+      data = "";
+    }
     while (ble.available()) {
       char c = ble.read();
-      if (c == '\n' || charIndex == BUF_SIZE) {
-        data = "";
-        for (int i = 0; i < charIndex; i++) {
-          data += charIn[i];
+      if (c == '\n' || data.length() > BUF_SIZE) {
+        while (ble.available()) {
+          ble.read(); // empty buffer
         }
-        charIndex = 0;
+        parse();
+        responses = 0;
+        buffering = false;
+      } else {
+        lastRx = millis();
+        buffering = true;
+        data += c;
+      }
+    }
+  }
+
+  if (DEBUG) {
+    if (Serial.available() > 0) {
+      data = "";
+    }
+    while (Serial.available() > 0) {
+      char c = Serial.read();
+      if (c == '\n' || data.length() > BUF_SIZE) {
+        //        while (Serial.available() > 0) {
+        //          Serial.read(); // to clean the remaining chars, check better option
+        //        }
         parse();
         responses = 0;
       } else {
-        charIn[charIndex] = c;
-        charIndex ++;
+        lastRx = millis();
+        data += c;
       }
-    }
-
-    //    if (buffering && millis() - lastRx > timeOut) {
-    //      buffering = false;
-    //      charIndex = 0;
-    //    }
-
-    //
-    //    while (ble.available()) {
-    //      char c = ble.read();
-    //      if (c == '\n' || charIndex == BUF_SIZE) {
-    //        data = "";
-    //        for (int i = 0; i < charIndex; i++) {
-    //          data += charIn[i];
-    //        }
-    //        charIndex = 0;
-    //        data = "400z00" + data[0];
-    //        parse();
-    //        buffering = false;
-    //        responses = 0;
-    //      } else {
-    //        lastRx = millis();
-    //        buffering = true;
-    //        charIn[charIndex] = c;
-    //        charIndex ++;
-    //      }
-    //    }
-  }
-  if (DEBUG) {
-    if (Serial.available() > 0) {
-      data = Serial.readStringUntil('\n');
-      parse();
-      responses = 0;
     }
   }
 }

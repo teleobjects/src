@@ -4,9 +4,8 @@ color redColor = color(190, 30, 45);
 color backgroundColor = 200;
 PFont font;//, fontBold, fontMono, fontMonoBold;
 
+float thickStroke = 3;
 PShape app, mask;
-
-float thick = 3;
 
 class Gui {
   boolean refresh = true;
@@ -17,10 +16,12 @@ class Gui {
   ArrayList<Packet> packets;
 
   Gui () {
+    init();
   }
 
   void init() {
     imageMode(CENTER);
+    ellipseMode(CENTER);
     app = loadShape("shp/app.svg");
     app.disableStyle();
 
@@ -37,35 +38,32 @@ class Gui {
     scale(width/1600.0);
 
     // PILOTS
-    refresh = true;
     checkPilots();
-    if (refresh) {
-      background(backgroundColor);
-      } else {
-      //if (debug) {
-      //  rectMode(CORNER);
-      //  noStroke();
-      //  fill(backgroundColor);
-      //  rect(0, 112, width, 120);
-      //  rect(0, (height/2)+194, width, 120);
-      //}
-    }
-    displayPilots();
+    background(backgroundColor);
 
+    //    if (refresh) {
+    //    } else {
+    //      //if (debug) {
+    //      //  rectMode(CORNER);
+    //      //  noStroke();
+    //      //  fill(backgroundColor);
+    //      //  rect(0, 112, width, 120);
+    //      //  rect(0, (height/2)+194, width, 120);
+    //      //}
+    //    }
+    displayPilots();
     // PACKETS
     if (debug) {
       displayPackets();
     }
     popMatrix();
-
     // DWEETS
     if (messaging != null && debug) {
       messaging.displayDweet(250, 630);
     }
-
-    if (android) {
-      refresh = false;
-    }
+    //if (android) {
+    //  refresh = false;
+    //}
   }
 
   void displayPackets() {
@@ -82,22 +80,22 @@ class Gui {
 
 void keyPressed() {
   switch (key) {
-    case '0':
+  case '0':
     activeObject = null;
     break;
-    case '1':
+  case '1':
     activeObject = ticker;
     break;
-    case '2':
+  case '2':
     activeObject = comment;
     break;
-    case '3':
+  case '3':
     activeObject = mailbox;
     break;
-    case '4':
+  case '4':
     activeObject = reel;
     break;
-    case '5':
+  case '5':
     activeObject = frame;
     break;
   }
@@ -134,6 +132,9 @@ class Packet {
     if (gui.packets.size() < 20) {
       gui.packets.add(this);
     }
+  }
+  
+  void init() {
   }
 
   void display() {

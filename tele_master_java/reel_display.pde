@@ -43,9 +43,8 @@ class ReelDisplay extends Display {
   void display() {
     fill(255);
     stroke(0);
-    strokeWeight(thick);
+    strokeWeight(thickStroke);
     shape(outline, 0, 0);
-
     pushMatrix();
     translate(offsetX/2, 0);
     translate(-offsetX * dotNum /2, 36);
@@ -64,7 +63,7 @@ class ReelDisplay extends Display {
     shape(wheel_mask, 0, 0);
     noFill();
     stroke(0);
-    strokeWeight(thick);
+    strokeWeight(thickStroke);
     shape(wheel, 0, 0);
 
     popMatrix();
@@ -77,7 +76,7 @@ class ReelDisplay extends Display {
     shape(wheel_mask, 0, 0);
     noFill();
     stroke(0);
-    strokeWeight(thick);
+    strokeWeight(thickStroke);
     shape(wheel, 0, 0);    popMatrix();
   }
 

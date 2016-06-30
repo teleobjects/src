@@ -2,6 +2,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Calendar;
 import java.io.File;
+import java.util.UUID;
+import java.util.List;
+import java.lang.Runtime;
+import java.net.InetAddress; 
+import java.net.UnknownHostException;
 
 import com.temboo.core.*;
 import com.temboo.Library.Google.Spreadsheets.*;
@@ -17,7 +22,7 @@ import com.temboo.Library.Twitter.Users.*;
 import com.temboo.Library.Twitter.FriendsAndFollowers.*;
 import com.temboo.Library.Google.Gmailv2.Messages.*;
 
-TembooSession session = new TembooSession("teleobjects", "teleobjects", "2KCJoyEHzlanzvmd6QAHlrSLuLPFffOw");
+TembooSession session;
 
 boolean debug = true;
 boolean verbose = true;
@@ -26,10 +31,15 @@ boolean sync = false;
 boolean retina = true;
 boolean android = false;
 
-Time time;
 Gui gui;
+
+Credentials credentials;
+Time time;
 Manager manager;
 Network network;
+Bluetooth bluetooth;
+Sensors sensors;
+Keyboard keyboard;
 Eq eq;
 Geolocation geolocation;
 
@@ -57,23 +67,28 @@ Teleobject activeObject;
 ArrayList<Teleobject> teleobjects;
 
 void setup() {
-  size(displayWidth, 700, OPENGL);
-  frameRate(60);
-  retina = displayDensity() == 2;
-  pixelDensity(displayDensity()); 
-  // fullScreen();
+  // fullScreen(OPENGL);
   // orientation(LANDSCAPE);
 
-  gui = new Gui();
-  gui.init();
+  size(displayWidth, 800, OPENGL);
+  retina = displayDensity() == 2;
+  pixelDensity(displayDensity()); 
 
+  frameRate(60);
+
+  gui = new Gui();
+
+  credentials = new Credentials();
   time = new Time();
   network = new Network();
+  bluetooth = new Bluetooth(this);
+  keyboard = new Keyboard(this);
   geolocation = new Geolocation();
+  sensors = new Sensors(this);
   weather = new Weather();
   places = new Places();
   eq = new Eq(this);
-  messaging = new Messaging();
+  messaging = new Messaging(); 
 
   google = new Google();
   profile = new Profile();
@@ -114,10 +129,8 @@ void setup() {
   teleobjects.add(comment);
   teleobjects.add(mailbox);
   teleobjects.add(reel);
-  teleobjects.add(frame);
-
-  activeObject = ticker;
-  // google.login();
+  //teleobjects.add(frame);
+  //activeObject = comment;
 }
 
 void draw() {
@@ -128,43 +141,46 @@ void draw() {
       if (google.authenticating) {
         google.login();
         manager.setChannel(GOOGLE);
-      } 
-      else if (twitter.authenticating) {
-        twitter.login();
-        manager.setChannel(TWITTER);
+        } else if (twitter.authenticating) {
+          twitter.login();
+          manager.setChannel(TWITTER);
+        }
+      }
+      } else {
+        time.update();
+        eq.update();
+        manager.update();
+        gui.update();
+        sensors.update();     
+        bluetooth.update();
+        //network.update();
+        //weather.update();
+
+        if (activeObject == null) {
+          ticker.update();
+          comment.update();
+          mailbox.update();
+          reel.update();
+          //frame.update();
+        } 
+        else {
+          activeObject.update();
+        }
+
+        if (activeObject == null) {
+          translate(width/2, height/2);
+          scale(android ? .9 : .68);
+          ticker.display(-210, 120);
+          comment.display(-400, -200);
+          mailbox.display(-960, 108);
+          reel.display(750, 80);
+          frame.display(200, -218);
+        } 
+        else {
+          translate(width/2, height/2);
+          scale(width/1600.0);
+          scale(1.2);
+          activeObject.display(0, -70);
+        }
       }
     }
-  } 
-  else {
-
-    updateSensors();                 
-    time.update();
-    eq.update();
-
-    manager.update();
-    gui.update();
-
-    // weather.update();
-
-    ticker.update();
-    // mailbox.update();
-    // comment.update();
-    // reel.update();
-    // frame.update();
-
-    if (activeObject == null) {
-      translate(width/2, height/2);
-      scale(.7);
-      ticker.display(-210, 120);
-      mailbox.display(-960, 108);
-      comment.display(-400, -200);
-      reel.display(740, 80);
-      frame.display(200, -220);
-    } 
-    else {
-      translate(width/2, height/2);
-      scale(width/1600.0);
-      activeObject.display(0, -70);
-    }
-  }
-}

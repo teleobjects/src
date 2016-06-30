@@ -19,7 +19,13 @@ class Teleobject {
 
   void update() {
     if (comm != null) {
-      if (comm.connected && comm.connecting) { 
+      if (comm.connected && !comm.acknowledged) {
+        comm.writeString("", PING, 0, 0, 0, 0, 0);
+        //comm.update();
+        //comm.lastTx = millis() + 300;
+      }
+
+      if (comm.connected && comm.connecting) { // && comm.acknowledged
         comm.connecting = false;
         manager.setChannel(HELLO);
         manager.loop = false;
@@ -27,23 +33,25 @@ class Teleobject {
 
       if (comm.connected) {
         comm.update();
-        // if (millis() < lastPage) comm.busy = true;  // to get rid of bouncing packets!!! check delay with bluetooth!
+        // if (android && comm.busy && !display.busy && millis() > comm.lastTx + 5000) { // so it does not get stacked, if missed a packet...
+        //   println("timeout waiting");
+        //   comm.timeOuts ++;
+        //   //    //comm.writeString("", PING, 0, 0, 0, 0, 0);  
+        //   comm.busy = false;
+        // }
         if (comm.busy) {
           lastPage = millis();
-        } 
-        else {
-          ready = true;
-        }
-      } 
-      else {
-        if (display.busy) {
-          lastPage = millis();
-        } 
-        else {
-          ready = true;
-        }
-      }
-    }
+          } else {
+            ready = true;
+          }
+          } else {
+            if (display.busy) {
+              lastPage = millis();
+              } else {
+                ready = true;
+              }
+            }
+          }
     // checkSensors();
     if (comm.battery > 3.00 && comm.battery < 3.40) channel = BATTERY;
     play();
@@ -130,12 +138,12 @@ class Teleobject {
   void printPages() {
   }
 
-  void checkSensors() {    
+  void checkSensors() {
   }
 
   void writeString(String content, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
-    if (content.length() > 256 - comm.headerLength - 2) content = content.substring(0,256-comm.headerLength-2); // restrict content to buffer size
-    if (content.length() == 128 - comm.headerLength - 1) content += " "; // avoid packets of 127, they crash, hack!!!
+    if (content.length() > 256 - comm.headerLength - 2) content = content.substring(0, 256-comm.headerLength-2); // restrict content to buffer size
+    if (content.length() == 128 - comm.headerLength - 1) content += " "; // avoid packets of 127, they crash, hack!!! check!!!
 
     content = display.cleanUp(content);
     comm.writeString(content, thisMode, tack, teck, tick, tock, tuck);
@@ -143,6 +151,10 @@ class Teleobject {
     // if (name.equals("ticker") && channel != ENERGY && channel != HELLO && channel != BYE) {
     //   reel.pages.add(new Page("", INSTANT, 1, 10, content.length()/2, 0, 0));
     // }
+
+    if (debug) {
+      println(name+"|"+thisMode+"|"+tack+"|"+teck+"|"+tick+"|"+tock+"|"+tuck+"|"+content);
+    }
   }
 }
 
@@ -162,62 +174,7 @@ class Page {
 }
 
 
-class Mailbox extends Teleobject {
-  Mailbox(PApplet _parent) {
-    parent = _parent;
-    // num = _num;
-  }
 
-  void init() {
-    comm = new Comm(parent);
-    display = new MailboxDisplay();
-    comm.portNumber = "1431";
-    comm.targetDeviceAddress = "D2:26:16:99:DF:A5";
-    comm.init();
-  }
-
-  void printPages() {
-    switch(channel) {
-      case HELLO: 
-      pages.add(new Page("", REFRESH, 0, 0, 0, 0, 1));
-
-      String hello = "What's up"+ (google.loggedin ? " "+profile.givenName : "") +"?";
-      pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-      pages.add(new Page("", FONT, 5, 0, 0, 0, 1));
-      pages.add(new Page(hello, STRING, 0, 1, 1, 64+6, 1));
-      pages.add(new Page("", SERVO, 2, 5, 15, 0, 0));
-
-      break;
-
-      case BYE:
-      pages.add(new Page("", SERVO, 0, 0, 0, 0, 1));
-      pages.add(new Page("", BACKGROUND, 0, 0, 0, 0, 1));
-      pages.add(new Page("", BACKGROUND, 0, 0, 0, 0, 1));
-
-      pages.add(new Page("", BLANK, 0, 0, 0, 0, 1));
-      pages.add(new Page("", FONT, 5, 0, 0, 0, 1));
-      pages.add(new Page("zzz", STRING, 0, 1, 1, 64+6, 1 ));
-      break;
-
-      case CONTACTS:
-      break;
-
-
-      default:
-      String thisCommandName = "";
-      if (channel > 100 && getPilotByCommand(channel) != null) {
-        thisCommandName = getPilotByCommand(channel).name;
-        } else {
-          thisCommandName = "????";
-        }
-        pages.add(new Page("", SERVO, 2, 5, 15, 0, 0));
-        pages.add(new Page("", FONT, 5, 0, 0, 0, 0));
-        pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
-        pages.add(new Page(thisCommandName, STRING, 0, 1, 1, 64+6, 0));
-        break;
-      }
-    }
-  }
 
 //////////
 // REEL
@@ -226,7 +183,6 @@ class Mailbox extends Teleobject {
 class Reel extends Teleobject {
   Reel(PApplet _parent) {
     parent = _parent;
-    // num = _num;
   }
 
   void init() {

@@ -1,15 +1,13 @@
 class MailboxDisplay extends Display {
   PShape outline, window, mask;
-
-
   int mode = 0;
   String data = "";
-
 
   long lastTick;
   int cursorX = 0;
   int breakX;
-  boolean busy;
+  boolean busy = true;
+
   int displayMode, tack, teck, tick, tock, tuck;
 
   int w = 128;
@@ -20,7 +18,6 @@ class MailboxDisplay extends Display {
   boolean gradient;
 
   int currentFont = 0;
-
 
   final int SYSTEM5x7 = 0;
   final int COM8x8 = 1;
@@ -42,7 +39,6 @@ class MailboxDisplay extends Display {
     window.disableStyle();
     mask = loadShape("shp/mask.svg");
     mask.disableStyle();
-
     foreground = whiteColor;
     background = redColor;
     top = 0;
@@ -59,12 +55,10 @@ class MailboxDisplay extends Display {
 
   void display() {
     pushMatrix();
-
     scale(.63);
     fill(255);
     stroke(0);
-    strokeWeight(thick/.7);
-
+    strokeWeight(thickStroke);
     shape(outline, 0, 0);
     pushMatrix();
     scale(.85);
@@ -75,11 +69,12 @@ class MailboxDisplay extends Display {
     shape(mask, 0, 60);
     noFill();
     stroke(0);
-    strokeWeight(thick/.7);
+    strokeWeight(thickStroke);
     shape(window, 0, 60);
     popMatrix();
   }
 
   void printString(String thisString, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
+    busy = true;
   }
 }
