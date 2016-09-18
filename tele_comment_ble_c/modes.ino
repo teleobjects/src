@@ -1,20 +1,29 @@
-
-
 void parse() {
+  busy = false;
+  if (mode == TICKER) deleteCursor = true;
+  if (data[0] - 48 == PING) return;
   mode =  data[0] - 48;
   tack = data[1] - 48;
   teck = data[2] - 48;
   tick = data[3] - 48;
   tock = data[4] - 48;
   tuck = data[5] - 48;
-  busy = false;
+  data = data.substring(PACKETIN, data.length());
   switch (mode) {
-
     case BLANK:
-      clearDisplay();
-      updateDisplay();
+      if (tack < 2) {
+        clearDisplay(tack);
+        updateDisplay(tack);
+        dis[tack] = "";
+      } else {
+        clearDisplay();
+        updateDisplay();
+        dis[0] = "";
+        dis[1] = "";
+      }
       setTextSize(1);
       setTextFont(1);
+      setBrightness(1);
       break;
 
     case FONT:
@@ -24,147 +33,235 @@ void parse() {
 
     case INSTANT:
       clearDisplay(tack);
-      data = cleanString(data.substring(PACKETIN, data.length()));
-      dis[tick] = data;
-      printDisplay(data, tack, 0, 0);
+      printDisplay(data, textWidth(data, tack), tack, 0, 0);
       updateDisplay(tack);
       break;
 
     case CENTERED:
-      clearDisplay(tack);
-      data = cleanString(data.substring(PACKETIN, data.length()));
-      dis[tick] = data;
-      printDisplay(data, tack, 1000, 0);
-      updateDisplay(tack);
-      break;
+      //      data += char(0);
+      if (tack > 1) {
+        clearDisplay();
+        int f = -1;
+        int c = int(data.length() / 2);
+        f = findFirstChar(data.substring(c, data.length()), ' ');
+        if (f == -1) {
+          f = findLastChar(data.substring(0, c), ' ');
+        } else {
+          f += c;
+        }
+        if (f != -1) {
+          printCentered(data.substring(0, f), 0, 0);
+          printCentered(data.substring(f + 1, data.length()), 1, 0);
+        } else {
+          printCentered(data, 0, 0);
+        }
+        updateDisplay();
+      } else {
+        clearDisplay(tack);
+        printCentered(data, tack, 0);
+        updateDisplay(tack);
+      }
 
-    case SCROLL:
-      clearDisplay(tack);
-      data = cleanString(data.substring(PACKETIN, data.length()));
-      scroll(data, tack, WIDTH, - textWidth(data), 0, tick);
       break;
 
     case SCROLL_CENTER_RIGHT:
-      clearDisplay(tack);
-      data = cleanString(data.substring(PACKETIN, data.length()));
-      scroll(data, tack, WIDTH, (WIDTH - textWidth(data) + 1) / 2, 0, tick);
+      dis[tack] = data;
+      cursorX = (WIDTH - textWidth( dis[tack], tack)) / 2;
+      scroll(dis[tack], tack, WIDTH, cursorX, 0, teck, tick);
+      cursorX += textWidth(dis[tack], tack);
       break;
 
     case SCROLL_ALL_RIGHT:
-      clearDisplay(tack);
-      data = cleanString(data.substring(PACKETIN, data.length()));
-      scroll(data, tack, WIDTH, -textWidth(data), 0, tick);
+      dis[tack] = data;
+      cursorX = -textWidth( dis[tack], tack);
+      scroll(dis[tack], tack, WIDTH, cursorX, 0, teck, tick);
+      dis[tack] = "";
+      cursorX = 0;
       break;
 
     case SCROLL_PUSH_RIGHT:
-      clearDisplay(tack);
-      data = cleanString(data.substring(PACKETIN, data.length()));
-      scroll(data, tack, WIDTH, - textWidth(data), 0, tick);
+      if (dis[tack] == "") {
+        dis[tack] = data;
+        scroll(dis[tack], tack, WIDTH, 0, 0, teck, tick);
+        cursorX = textWidth(dis[tack], tack);
+      } else {
+        int left = cursorX - textWidth(dis[tack], tack);
+        int right = 0;
+        while (right < WIDTH) {
+          dis[tack] = dis[tack] + " ";
+          right = left + textWidth(dis[tack], tack);
+        }
+        scroll(dis[tack] + data, tack, left, -textWidth(dis[tack], tack), 0, teck, tick);
+        dis[tack] = data;
+        cursorX = textWidth(dis[tack], tack);
+      }
+      break;
+
+    case SCROLL_DOWN:
+      scrollDown(data, teck);
+      break;
+    case BATTERY:
+      clearDisplay(0);
       break;
 
     case TICKER:
-      clearDisplay(tack);
-      cursorX = 0;
-      dis[tack] = "";
-      data = cleanString(data.substring(PACKETIN, data.length()));
+      //      data += char(0);
       busy = true;
+      cursorL = tack > 0 ? 1 : 0;
+      if (cursorL == 0) {
+        clearDisplay();
+        dis[0] = "";
+        dis[1] = "";
+      }
+      dis[cursorL] = "";
+      cursorX = 0;
+      cursorY = 0;
+      breakX = 0;
       break;
 
+    case SPECTRUM:
+      busy = true;
+      if (lastMode != mode) clearDisplay();
+      showSpectrum();
+      break;
+
+    case CLOCK:
+      for (int i = 0; i < 6; i++) {
+        timer[i] = data[i] - 48;
+      }
+      if (teck > 0) {
+        int hour = timer[0] * 10 + timer[1];
+        postMeridiam = hour > 12;
+        if (postMeridiam) {
+          hour = hour - 12;
+          timer[0] = int (hour / 10);;
+          timer[1] = hour - (timer[0] * 10);
+        }
+      }
+      for (int i = 0; i < 6; i++) {
+        lastTimer[i] = timer[i];
+      }
+      nextTime = millis() + 1000;
+      break;
+
+    case BRIGHTNESS:
+      brightness = tack;
+      if (brightness > 15) brightness = 1;
+      setBrightness(brightness);
+      break;
     case WAIT:
       break;
   }
 }
 
 void play() {
+  if (deleteCursor) {
+    setTextColor(LED_OFF);
+    printDisplay("_", 4, tcL, tcX, tcY); //
+    setTextColor(LED_ON);
+    deleteCursor = false;
+    updateDisplay(tcL);
+  }
+
   switch (mode) {
-    case CLOCK:
-      clock();
-      break;
     case TICKER:
-      if (busy && millis() > lastTick + tick) {
+      if (busy && millis() > lastTick + tick && data.length() > 0) {
         lastTick = millis();
-        if (data.length() > 0) {
-          dis[tack] += data[0];
-          cursorX += charWidth(data[0]);
-          data = data.substring(1, data.length());
-          if (cursorX > WIDTH || data.length() == 0) {
-            busy = false;
+        if (breakX == -1) {
+          scrollDoubleUp();
+          breakX = 0;
+        }
+        if (breakX == -2) {
+          cursorL = 1;
+          deleteCursor = true;
+          breakX = 0;
+          break;
+        }
+        if (breakX == 0) {
+          if (data[0] == ' ' && data.length() > 0) data = data.substring(1, data.length());
+          int nextSpace = 0;
+          int f = 0;
+          breakX = WIDTH;
+          while (true) {
+            String nextBlock = data.substring(nextSpace, data.length());
+            f = findFirstChar(nextBlock, ' ');
+            if (f == -1) {
+              if (textWidth(data, cursorL) < WIDTH) breakX = textWidth(data, cursorL);
+              break;
+            }
+            nextSpace = nextSpace + f ;
+            int nextX = textWidth(data.substring(0, nextSpace), cursorL);
+            nextSpace ++;
+            if (nextX >= WIDTH) break;
+            breakX = nextX;
           }
         }
-      }
-      clearDisplay(tack);
-      printDisplay(dis[tack], tack, 0, 0);
-      // CURSOR
-      if (cursorX < WIDTH && cursorX >= 0) {
-        if (millis() % 500 < 250) {
-          setTextColor(LED_OFF);
-        } else {
-          setTextColor(LED_ON);
+
+        dis[cursorL] += data[0];
+        cursorX += charWidth(data[0], cursorL);
+        tcX = cursorX;
+        tcL = cursorL;
+        tcY = 0;
+
+        clearDisplay(cursorL);
+        printDisplay(dis[cursorL], textWidth(dis[cursorL], cursorL), cursorL, 0, 0);
+
+        if (cursorX > breakX && data.length() > 0 ) {
+          lastTick = millis() + tock * 100;
+          cursorX = 0;
+          tcX -= textWidth(" ", tcL);
+          if (cursorL == 0) {
+            breakX = -2;
+          } else {
+            breakX = -1;
+          }
         }
-        printDisplay("_", tack, cursorX, 0);
-        setTextColor(LED_ON);
+        data = data.substring(1, data.length());
+        if (data.length() == 0) busy = false;
       }
-      updateDisplay(tack);
+
+      // CURSOR
+      setTextColor(millis() % 500 < 250 ? 0 : 1);
+      printDisplay("_", 4, tcL, tcX, tcY);
+      setTextColor(LED_ON);
+      updateDisplay(cursorL);
       break;
+
     case RANDOM:
-      random();
-      delay(1);
+      showRandom();
       break;
-    case BATTERY:
-      batIndex = int(map(voltage, minBat, maxBat, 0, 10));
-      clearDisplay();
-      setTextFont(1);
-      printDisplay(String(voltage) + "v", 1, 1000, 0);
-      printDisplay(String(batIndex) + "0%", 0, 1000, 0);
-      updateDisplay();
+
+    case NOISE:
+      showNoise();
       break;
+
+    case COUNTER:
+      showCounter();
+      break;
+
     case ALPHABET:
-      alphabet();
+      showAlphabet();
       break;
 
+    case BATTERY:
+      showBattery();
+      break;
+
+    case BRIGHTNESS:
+      showBrightness();
+      break;
+
+    case CLOCK:
+      showClock();
+      break;
   }
 
-}
-
-
-void alphabet() {
-  String str = "";
-  for (int i = 32; i < 200; i++) {
-    str += char(i);
+  if (deleteCursor) {
+    setTextColor(LED_OFF);
+    printDisplay("_", 4, tcL, tcX, tcY); //
+    setTextColor(LED_ON);
+    deleteCursor = false;
+    updateDisplay(tcL);
   }
 
-  clearDisplay(0);
-  scroll(str, 0, WIDTH, -textWidth(str), 0, 5);
-}
-
-void random() {
-  String str;
-  for (int i = 0; i < 20; i++) {
-    str += char((byte)(48 + random(10)));
-  }
-  clearDisplay();
-  printDisplay(str, 0, 0, 0);
-  str = "";
-  for (int i = 0; i < 20; i++) {
-    str += char((byte)(48 + random(10)));
-  }
-  printDisplay(str, 1, 0, 0);
-  updateDisplay();
-  delay(50);
-}
-
-void clock() {
-  int v0 = 0;
-  int v1 = -8;
-  clearDisplay();
-  setTextFont(0);
-  setTextSize(2);
-  //  printDouble("hello", 4, v0, v1);
-  printDouble(String(char(tack)), 4, v0, v1);
-
-  printDouble(String(char(teck)), 16, v0, v1);
-  printDouble(String(char(tick)), 34, v0, v1);
-  printDouble(String(char(tock)), 47, v0, v1);
-  printDouble(millis() % 500 < 250 ? "." : " ", 24, v0, v1);
-  updateDisplay();
 }

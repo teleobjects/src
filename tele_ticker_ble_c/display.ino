@@ -82,4 +82,13 @@ void clearDisplay() {
   cursorX = 0;
 }
 
+void blinkDisplay(byte t, byte s) {
+  String tmpDis = dis;
+  clearDisplay();
+  updateDisplay();
+  delay(t);
+  dis = tmpDis;
+  updateDisplay();
+  delay(s);
+}
 

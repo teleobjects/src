@@ -1,18 +1,17 @@
 
 color whiteColor = color (255, 255, 255);
 color redColor = color(190, 30, 45);
-color backgroundColor = 200;
+color greenColor = color(147, 213, 48);
+color orangeColor = color(255, 128, 0);
+color backgroundColor = 50;
 PFont font;//, fontBold, fontMono, fontMonoBold;
 
 float thickStroke = 3;
 PShape app, mask;
 
 class Gui {
-  boolean refresh = true;
-  float rot, targetRot;
-  int debounce = 500;
-  long lastClick;
-  boolean clicked;
+  //boolean refresh = true;
+  //float rot, targetRot;
   ArrayList<Packet> packets;
 
   Gui () {
@@ -24,46 +23,24 @@ class Gui {
     ellipseMode(CENTER);
     app = loadShape("shp/app.svg");
     app.disableStyle();
-
     mask = loadShape("shp/mask.svg");
     mask.disableStyle();
-    font = createFont("Monospaced", 32);
-
+    textSize(16);
     initPilots();
     packets = new ArrayList<Packet>();
   }
 
-  void update() {
-    pushMatrix();
-    scale(width/1600.0);
-
+  void display() {
     // PILOTS
-    checkPilots();
-    background(backgroundColor);
-
-    //    if (refresh) {
-    //    } else {
-    //      //if (debug) {
-    //      //  rectMode(CORNER);
-    //      //  noStroke();
-    //      //  fill(backgroundColor);
-    //      //  rect(0, 112, width, 120);
-    //      //  rect(0, (height/2)+194, width, 120);
-    //      //}
-    //    }
     displayPilots();
     // PACKETS
     if (debug) {
       displayPackets();
     }
-    popMatrix();
-    // DWEETS
+    // MESSAGING
     if (messaging != null && debug) {
       messaging.displayDweet(250, 630);
     }
-    //if (android) {
-    //  refresh = false;
-    //}
   }
 
   void displayPackets() {
@@ -78,46 +55,6 @@ class Gui {
   }
 }
 
-void keyPressed() {
-  switch (key) {
-  case '0':
-    activeObject = null;
-    break;
-  case '1':
-    activeObject = ticker;
-    break;
-  case '2':
-    activeObject = comment;
-    break;
-  case '3':
-    activeObject = mailbox;
-    break;
-  case '4':
-    activeObject = reel;
-    break;
-  case '5':
-    activeObject = frame;
-    break;
-  }
-  if (key >= 48 && key <= 58) {  
-    //ticker.editor.setChannel(key-48);
-  }
-  if (key >= 65 && key <= 65+28) {
-    //ticker.editor.setChannel(key-48);
-  }
-}
-
-void mousePressed() {
-  if (millis()-gui.lastClick > gui.debounce) {
-    gui.lastClick = millis();
-    gui.clicked = true;
-  }
-}
-
-void mouseReleased() {
-  gui.clicked = false;
-}
-
 class Packet {
   PVector loc;
   PVector targetLoc;
@@ -127,23 +64,27 @@ class Packet {
   Packet(boolean in_, String label_, float x_) { 
     label = label_;
     in = in_;
-    loc = new PVector (x_+(in?40:0)-20, in ? 400 : 118, 255);
-    targetLoc = new PVector (x_+(in?40:0)-20, in ? 118 : 400, 0);
+    loc = new PVector (x_+(in?40:0)-20, in ? displayHeight/2-100 : 118, 255);
+    targetLoc = new PVector (x_+(in?40:0)-20, in ? 118 : displayHeight/2-100, 0);
     if (gui.packets.size() < 20) {
       gui.packets.add(this);
     }
   }
-  
+
   void init() {
   }
 
   void display() {
-    loc.x = attract(loc.x, targetLoc.x, .08, 5);
+    //loc.x = attract(loc.x, targetLoc.x, .08, 5);
     loc.y = attract(loc.y, targetLoc.y, .08, 5);
     loc.z = attract(loc.z, targetLoc.z, .08, 5);
+    hint(DISABLE_DEPTH_TEST);
+
+    // hint(ENABLE_DEPTH_TEST);
     noStroke();
-    fill(in ? whiteColor : redColor, loc.z);
-    ellipseMode(CENTER);
+    fill(in ? (real ? 50 : whiteColor) : redColor, loc.z);
     ellipse(loc.x, loc.y, 15, 15);
+    ellipseMode(CENTER);
+    // hint(DISABLE_DEPTH_TEST);
   }
 }

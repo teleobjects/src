@@ -1,30 +1,33 @@
 void initComm() {
   if (!ble.begin(VERBOSE_MODE))
   {
-    Serial.println("Couldn't start Bluetooth");
+    //    Serial.println("Couldn't start Bluetooth");
   }
-  if (!ble.factoryReset() ) {
-    Serial.println("Couldn't factory reset");
-  }
-  //  ble.info();
-  ble.verbose(false);
+  //  ble.echo(false);
+  //  if (!ble.factoryReset() ) {
+  //    Serial.println("Couldn't factory reset");
+  //  }
+  ble.info();
   ble.echo(false);
+  ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
+  //  ble.sendCommandCheckOK("AT+BLEPOWERLEVEL=4");
+  //  while (!ble.isConnected()) {
+  //    delay(100);
+  //    Serial.print(".");
+  //  }
+  ble.setMode(BLUEFRUIT_MODE_DATA);
+  connected = true;
 }
 
-void updateComm() {
-  if (ble.isConnected()) {
-    connected = true;
-    connecting = false;
-    if ( ble.isVersionAtLeast(MINIMUM_FIRMWARE_VERSION) ) {
-      ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
-    }
-    ble.sendCommandCheckOK("AT+BLEPOWERLEVEL=4");
-    ble.setMode(BLUEFRUIT_MODE_DATA);
-  } else {
-    connected = false;
-  }
-}
-
+//void updateComm() {
+//  if (ble.isConnected() && connecting) {
+//    connected = true;
+//    connecting = false;
+//      ble.sendCommandCheckOK("AT+HWModeLED=" MODE_LED_BEHAVIOUR);
+//    ble.sendCommandCheckOK("AT+BLEPOWERLEVEL=4");
+//    ble.setMode(BLUEFRUIT_MODE_DATA);
+//  }
+//}
 
 void tx() {
   if (millis() - lastTx > txSpeed) {
@@ -56,15 +59,15 @@ void tx() {
 
 void rx() {
   if (connected) {
-    if (buffering && millis() - lastRx > timeOut) {
-      buffering = false;
-      data = "";
-      responses = 0;
-      busy = false;
-      while (ble.available()) {
-        ble.read(); // empty buffer
-      }
-    }
+    //    if (buffering && millis() - lastRx > timeOut) {
+    //      buffering = false;
+    //      data = "";
+    //      responses = 0;
+    //      busy = false;
+    //      while (ble.available()) {
+    //        ble.read(); // empty buffer
+    //      }
+    //    }
     if (ble.available() > 0 && !buffering) {
       data = "";
     }
@@ -87,20 +90,26 @@ void rx() {
 
   if (DEBUG) {
     if (Serial.available() > 0) {
-      data = "";
+      data = Serial.readStringUntil('\n');
+      parse();
+      responses = 0;
     }
-    while (Serial.available() > 0) {
-      char c = Serial.read();
-      if (c == '\n' || data.length() > BUF_SIZE) {
-        //        while (Serial.available() > 0) {
-        //          Serial.read(); // to clean the remaining chars, check better option
-        //        }
-        parse();
-        responses = 0;
-      } else {
-        lastRx = millis();
-        data += c;
-      }
-    }
+
+    //    if (Serial.available() > 0) {
+    //      data = "";
+    //    }
+    //    while (Serial.available() > 0) {
+    //      char c = Serial.read();
+    //      if (c == '\n') { //  || data.length() > BUF_SIZE
+    //        //        while (Serial.available() > 0) {
+    //        //          Serial.read(); // to clean the remaining chars, check better option
+    //        //        }
+    //        parse();
+    //        responses = 0;
+    //      } else {
+    //        lastRx = millis();
+    //        data += c;
+    //      }
+    //    }
   }
 }

@@ -7,7 +7,7 @@ PShape reel, reel_, reel_tape, alarm, alarm_, alarm__, hammer, hammer_;
 PImage texture;
 PImage shadow;
 
-boolean debug, muted = false, textured = true;
+boolean debug, muted = true, textured = true;
 
 color darkGreyColor = 80;
 color backgroundColor = 220;
@@ -18,8 +18,8 @@ long globalStart;
 
 
 void setup() {
-  //size(1280, 720, P3D); 
-  size(1920, 1080, P3D);
+  size(1280, 720, OPENGL); 
+  // size(1920, 1080, P3D);
   //size(2048, 1152, P3D);
   frameRate(60);
   noCursor();
@@ -28,7 +28,7 @@ void setup() {
   rectMode(CENTER);
   textMode(MODEL);
   smooth(16);
-  hint(DISABLE_DEPTH_TEST);
+  // hint(DISABLE_DEPTH_TEST);
   sevenFont = createFont ("Digital-7Mono", 128);
   helvetica = createFont("HelveticaNeue-Light", 64);
   orator = createFont("OratorStd", 128);

@@ -1,12 +1,20 @@
 
+int findFirstChar(String str, char c) {
+  //  if (str.length() == 0) return -1;
+  for (int i = 0; i < str.length(); i++) {
+    if (str.charAt(i) == c) return i;
+  }
+  return -1;
+}
+
 int findLastChar(String str, char c) {
-  if (str.length() == 0) return 0;
+//  if (str.length() == 0) return 0;
   int count = str.length() - 1;
   while (count > 1) {
     if (str.charAt(count) == c) return count;
     count --;
   }
-  return str.length() - 1;
+  return - 1;
 }
 
 int countChar(String str, char c) {

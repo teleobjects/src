@@ -1,6 +1,15 @@
 void play() {
   switch (mode) {
 
+    case TYPE:
+      if (cursorX < CHARS && cursorX >= 0) dis[cursorX] = millis() % 500 < 250 ? 32 : '_';
+      updateDisplay();
+      break;
+
+    case SENSORS:
+      showSensors();
+      break;
+
     case RANDOM:
       showRandom();
       break;
@@ -33,9 +42,13 @@ void play() {
       showLook();
       break;
 
+    case CLOCK:
+      showClock();
+      break;
+
     case SCROLL:
       if (busy) {
-        if (millis() > lastTick + tick) {
+        if (millis() > lastTick + tick * 2) {
           lastTick = millis();
           if (cursorX < breakX) {
             cursorX ++;
@@ -43,18 +56,17 @@ void play() {
               dis[i] = dis[i + 1];
               dec[i] = dec[i + 1];
             }
-
             if (data.length() > 0) {
               dis[CHARS - 1] = data[0];
               dec[CHARS - 1] = false;
               data = data.substring(1, data.length());
-              if (data.length() > 0) {
-                if (data[0] == '.' && dis [CHARS - 2] != '.') {
-                  dec[CHARS - 1] = true;
-                  data = data.substring(1, data.length());
-                  breakX --;
-                }
-              }
+              //              if (data.length() > 0) {
+              //                if (data[0] == '.' && dis [CHARS - 2] != '.') {
+              //                  dec[CHARS - 1] = true;
+              //                  data = data.substring(1, data.length());
+              //                  breakX --;
+              //                }
+              //              }
             } else {
               dis[CHARS - 1] = ' ';
               dec[CHARS - 1 ] = false;
@@ -83,6 +95,8 @@ void play() {
             }
           } else {
             busy = false;
+            tx();
+
           }
         }
         updateDisplay();
@@ -121,6 +135,8 @@ void play() {
           }
         } else {
           busy = false;
+          tx();
+
         }
       }
       if (cursorX < CHARS && cursorX >= 0) dis[cursorX] = millis() % 500 < 250 ? 32 : '_';
@@ -136,16 +152,7 @@ void play() {
       break;
 
     case BALL:
-      clearDisplay();
-      dis[ballX] = ballY == 0 ? 'o' : 30 ;
-      //      ballX -= x;
-      if (ballX < 0) ballX = 0;
-      if (ballX > 31) ballX = 31;
-      //      ballY += z;
-      if (ballY < 0) ballY = 0;
-      if (ballY > 1) ballY = 1;
-      delay(tick);
-      updateDisplay();
+      showBall();
       break;
 
     case AIRPORT:
@@ -159,58 +166,143 @@ void play() {
     case SNOW:
       showSnow();
       break;
-  }
 
+    case MENU:
+      showMenu();
+      break;
+
+    case SHOW:
+      showShow();
+      break;
+  }
+}
+
+void error() {
+  dec[31] = true;
+  dec[30] = true;
+  dec[29] = true;
+  updateDisplay();
 }
 
 void parse() {
-  busy = false;
-
-  if (data[0] - 48 == PING) return;
-
-  mode = data[0] - 48;
-  tack = data[1] - 48;
-  teck = data[2] - 48;
-  tick = data[3] - 48;
-  tock = data[4] - 48;
-  tuck = data[5] - 48;
+  if (data[1] - 48 == PING) {
+    tx();
+    return;
+  }
+  mode = data[1] - 48;
+  tack = data[2] - 48;
+  teck = data[3] - 48;
+  tick = data[4] - 48;
+  tock = data[5] - 48;
+  tuck = data[6] - 48;
   data = data.substring(PACKETIN, data.length());
-  if (data.length() > 0 && data[data.length() - 1] == ' ') data = data.substring(0, data.length() - 1); // get rid of trailing space, hack!
+
+  //  click(STRONG_CLICK);
+  //  if (mode != STREAM && mode != TYPE && mode != SPECTRUM && data.length() > 0 && data[data.length() - 1] == ' ') data = data.substring(0, data.length() - 1); // get rid of trailing space, hack!
 
   switch (mode) {
+    case SHOW:
+      currentShowItem = 0;
+      scrollShow(false);
+      break;
+    case TYPE:
+      if (data[0] == 8) {
+        if (cursorX > 0) {
+          dis[cursorX] = 32;
+          dis[cursorX - 1] = 32;
+          cursorX --;
+        }
+      } else if (data[0] == 31) {
+        clearDisplay();
+      } else if (data[0] >= 32 && data[0] < 128) {
+        dis[cursorX] = data[0];
+        cursorX ++;
+        if (cursorX == CHARS) {
+          for (int i = 0; i < CHARS - 1; i ++) {
+            dis[i] = dis[i + 1];
+          }
+          cursorX --;
+        }
+      }
+      updateDisplay();
+      tx();
+      break;
+
+    case CLOCK:
+      if (tack > 0) {
+        for (int i = 0; i < 6; i++) {
+          timer[i] = data[i] - 48;
+        }
+        if (teck > 0) {
+          int hour = timer[0] * 10 + timer[1];
+          postMeridiam = hour >= 12;
+          if (hour == 0) hour = 12;
+          if (postMeridiam) {
+            hour = hour - 12;
+          }
+          timer[0] = int (hour / 10);;
+          timer[1] = hour - (timer[0] * 10);
+        }
+      }
+      //      for (int i = 0; i < 6; i++) {
+      //        lastTimer[i] = timer[i];
+      //      }
+      nextTime = millis() + 1000;
+      //      busy = false;
+      tx();
+      break;
+
     case COUNTER:
       clearDisplay();
+      tx();
       break;
-      
+
     case RAIN:
       clearDisplay();
+      tx();
       break;
 
     case SNOW:
       clearDisplay();
+      tx();
       break;
 
     case LOADING:
       clearDisplay();
+      tx();
       break;
 
     case COMPASS:
       clearDisplay();
+      tx();
+      break;
+
+    case SENSORS:
+      tx();
+      break;
+
+    case RANDOM:
+      tx();
       break;
 
     case BATTERY:
       clearDisplay();
+      tx();
       break;
 
     case BLANK:
       clearDisplay();
       updateDisplay();
+      tx();
       break;
 
     case BRIGHTNESS:
-      brightness = tack;
-      if (brightness > 15) brightness = 1;
-      setBrightness(brightness);
+      if (tack != 0) {
+        brightness = tack;
+        if (brightness > 15) brightness = 1;
+        setBrightness(brightness);
+      }
+      tx();
       break;
 
     case LOOK:
@@ -219,6 +311,7 @@ void parse() {
       eyesX = 0;
       //      busy = true;
       //      awakeStart = millis();
+      tx();
       break;
 
     case INSTANT:
@@ -233,9 +326,37 @@ void parse() {
         cursorX ++;
       }
       updateDisplay();
+      tx();
+      break;
+
+    case SPECTRUM:
+      //      busy = true;
+      //      for (int i = 0; i < CHARS / 4; i++) {
+      //        byte b[4] = {0, 0, 0, 0};
+      //        char c = 255 - data[i];
+      //        b[0] = (c & 0b00000011);
+      //        b[1] = (c & 0b00001100) >> 2;
+      //        b[2] = (c & 0b00110000) >> 4;
+      //        b[3] = (c & 0b11000000) >> 6;
+      //        for (int j = 0; j < 4; j++) {
+      //          dis[(i * 4) + j] = spectrum[b[j]];
+      //          dec[(i * 4) + j] = false;
+      //        }
+      //      }
+      //      if (data.length() == 4) {
+
+      for (int i = 0; i < data.length() ; i++) {
+//        if (data[i] > 3) data[i] == 0;
+        dis[i] = spectrum[data[i] - 48];
+        dec[i] = false;
+        //        }
+      }
+      updateDisplay();
+
       break;
 
     case STREAM:
+      //      busy = true;
       if (data.length() == CHARS) {
         for (int i = 0; i < CHARS; i++) {
           dis[i] = data[i];
@@ -243,7 +364,6 @@ void parse() {
         }
       }
       updateDisplay();
-      busy = true;
       break;
 
     case CENTERED:
@@ -261,6 +381,7 @@ void parse() {
         cursorX ++;
       }
       updateDisplay();
+      tx();
       break;
 
     case TICKER:
@@ -268,80 +389,84 @@ void parse() {
       breakX = 0;
       break;
 
-    case SCROLL_ALL_RIGHT:
+    case SCROLL:
       busy = true;
       cursorX = 0;
-      breakX = CHARS + data.length();
       mode = SCROLL;
-      break;
-
-    case SCROLL_CENTER_RIGHT:
-      busy = true;
-      cursorX = 0;
-      breakX = ((CHARS - data.length()) / 2) + data.length();
-      mode = SCROLL;
-      break;
-
-    case SCROLL_PUSH_RIGHT:
-      busy = true;
-      cursorX = 0;
-      lastX = CHARS + 1;
-      for (int i = CHARS - 1; i >= 0; i--) {
-        if (dis[i] != ' ') break;
-        lastX --;
+      if (tock == 0) {
+        clearDisplay();
       }
-      breakX = ((CHARS - data.length()) / 2) + data.length();
-      if (breakX < lastX) {
-        for (int i = 0; i < (lastX - breakX) && data.length() < CHARS; i++) {
-          data = " " + data;
-          data = data + " ";
+
+      if (tack == 0) {
+        switch (teck) {
+          case 0:
+            breakX = CHARS + data.length();
+            break;
+          case 1:
+            breakX = ((CHARS - data.length()) / 2) + data.length();
+            if (tock == 1) {
+              lastX = CHARS + 1;
+              for (int i = CHARS - 1; i >= 0; i--) {
+                if (dis[i] != ' ') break;
+                lastX --;
+              }
+              breakX = ((CHARS - data.length()) / 2) + data.length();
+              if (breakX < lastX) {
+                for (int i = 0; i < (lastX - breakX) && data.length() < CHARS; i++) {
+                  data = " " + data;
+                  data = data + " ";
+                }
+                //        if (data.length() > CHARS) data = data.substring(0, CHARS);
+                if (CHARS > data.length()) {
+                  breakX = ((CHARS - data.length()) / 2) + data.length();
+                } else {
+                  breakX = data.length();
+                }
+              }
+            }
+            break;
+          case 2:
+            breakX = CHARS;
+            break;
+          case 3:
+            breakX = data.length();
+            break;
         }
-        //        if (data.length() > CHARS) data = data.substring(0, CHARS);
-        if (CHARS > data.length()) {
-          breakX = ((CHARS - data.length()) / 2) + data.length();
-        } else {
-          breakX = data.length();
+      } else {
+        switch (teck) {
+          case 0:
+            breakX = -(CHARS + data.length());
+            break;
+          case 1:
+            breakX = -((CHARS - data.length()) / 2) - data.length();
+            if (tock == 1) {
+              firstX = 0;
+              for (int i = 0; i < CHARS; i++) {
+                if (dis[i] != ' ') break;
+                firstX ++;
+              }
+              firstX = -(CHARS - firstX);
+              if (breakX > firstX) {
+                for (int i = 0; i < (breakX - firstX) && data.length() < CHARS; i++) {
+                  data = " " + data;
+                  data = data + " ";
+                }
+                if (CHARS > data.length()) {
+                  breakX = -((CHARS - data.length()) / 2) - data.length();
+                } else {
+                  breakX = data.length();
+                }
+              }
+            }
+            break;
+          case 2:
+            breakX = -CHARS;
+            break;
+          case 3:
+            breakX = - data.length();
+            break;
         }
       }
-      mode = SCROLL;
-      break;
-
-    case SCROLL_ALL_LEFT:
-      busy = true;
-      cursorX = 0;
-      breakX = -CHARS - data.length();
-      mode = SCROLL;
-      break;
-
-    case SCROLL_CENTER_LEFT:
-      busy = true;
-      cursorX = 0;
-      breakX = -((CHARS - data.length()) / 2) - data.length();
-      mode = SCROLL;
-      break;
-
-    case SCROLL_PUSH_LEFT:
-      busy = true;
-      cursorX = 0;
-      firstX = 0;
-      for (int i = 0; i < CHARS; i++) {
-        if (dis[i] != ' ') break;
-        firstX ++;
-      }
-      firstX = -(CHARS - firstX);
-      breakX = -((CHARS - data.length()) / 2) - data.length();
-      if (breakX > firstX) {
-        for (int i = 0; i < (breakX - firstX) && data.length() < CHARS; i++) {
-          data = " " + data;
-          data = data + " ";
-        }
-        if (CHARS > data.length()) {
-          breakX = -((CHARS - data.length()) / 2) - data.length();
-        } else {
-          breakX = data.length();
-        }
-      }
-      mode = SCROLL;
       break;
 
     case AIRPORT:

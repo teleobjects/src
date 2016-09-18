@@ -7,7 +7,7 @@ class Teleobject {
   int pageIndex = -1;
   int lastPageIndex = -1;
   long lastPage;
-  int pageDelay = 2000;
+  int pageDelay;// = 2000;
   boolean newPage;
   int channel;
   boolean ready;
@@ -19,41 +19,75 @@ class Teleobject {
 
   void update() {
     if (comm != null) {
-      if (comm.connected && !comm.acknowledged) {
+
+      if (comm.connected && !comm.acknowledged && millis() > comm.lastTx + 500) {
         comm.writeString("", PING, 0, 0, 0, 0, 0);
-        //comm.update();
-        //comm.lastTx = millis() + 300;
       }
 
-      if (comm.connected && comm.connecting) { // && comm.acknowledged
+      if (comm.connected && comm.connecting && comm.acknowledged) {
         comm.connecting = false;
+        //comm.greeted = true;
         manager.setChannel(HELLO);
-        manager.loop = false;
+        manager.loop = true;
+        comm.busy = false;
+        ready = true;
       }
+
+      if (channel == EQ) {
+        comm.busy = false;
+        ready = true;
+      }  
 
       if (comm.connected) {
         comm.update();
-        // if (android && comm.busy && !display.busy && millis() > comm.lastTx + 5000) { // so it does not get stacked, if missed a packet...
-        //   println("timeout waiting");
-        //   comm.timeOuts ++;
-        //   //    //comm.writeString("", PING, 0, 0, 0, 0, 0);  
-        //   comm.busy = false;
-        // }
+        if (androidMode && comm.busy && !display.busy && millis() > comm.lastTx + 1000) { // so it does not get stacked, if missed a packet...
+          println("timeout " + comm.timeOuts);
+          comm.timeOuts ++;
+          //comm.writeString("", PING, 0, 0, 0, 0, 0);  
+          //comm.busy = false;
+        }
         if (comm.busy) {
           lastPage = millis();
-          } else {
-            ready = true;
-          }
-          } else {
-            if (display.busy) {
-              lastPage = millis();
-              } else {
-                ready = true;
-              }
-            }
-          }
-    // checkSensors();
-    if (comm.battery > 3.00 && comm.battery < 3.40) channel = BATTERY;
+        } else {
+          ready = true;
+        }
+      } else {
+        if (display.busy) {
+          lastPage = millis();
+        } else {
+          ready = true;
+        }
+      }
+
+      if (comm.parsed) {
+        //comm.parsed = false;
+        //if (comm.mm != display.mode) {
+        //  if (comm.mm == COMPASS || comm.mm == CLOCK || comm.mm == RAIN || comm.mm == AXIS || comm.mm == BATTERY || comm.mm == SLEEP || comm.mm == BRIGHTNESS || comm.mm == LOOK) {
+        //    switch(comm.mm) {
+        //    case AXIS:
+        //      manager.channel = ORIENTATION;
+        //      break;
+        //    case COMPASS:
+        //      manager.channel = NAVIGATION;
+        //      break;
+        //    case CLOCK:
+        //      manager.channel = TIME;
+        //      break;
+        //    case BATTERY:
+        //      manager.channel = ENERGY;
+        //      break;
+        //    case BRIGHTNESS:
+        //      manager.channel = DIM;
+        //      break;
+        //    }
+        //    display.mode = comm.mm;
+        //    channel = manager.channel;
+        //  }
+        //}
+      }
+    }
+
+
     play();
   }
 
@@ -73,7 +107,7 @@ class Teleobject {
       if (manager.play) {
         pageIndex++;
         if (pageIndex == pages.size()) {                  
-          if ((manager.loop && pages.size() > 1) || manager.channel == EQ || manager.channel == TIME || manager.channel == ORIENTATION) {
+          if ((manager.loop && pages.size() > 1) || manager.channel == EQ || manager.channel == KARAOKE) {
             initPages(channel);
             printPages();
           }
@@ -100,7 +134,6 @@ class Teleobject {
 
   void initPages(int _channel) {
     pages = new ArrayList<Page>();
-    // if (_channel != channel) newPage = true;
     channel = _channel;
     lastPageIndex = -1;
     pageIndex = 0;
@@ -142,18 +175,13 @@ class Teleobject {
   }
 
   void writeString(String content, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
-    if (content.length() > 256 - comm.headerLength - 2) content = content.substring(0, 256-comm.headerLength-2); // restrict content to buffer size
-    if (content.length() == 128 - comm.headerLength - 1) content += " "; // avoid packets of 127, they crash, hack!!! check!!!
-
-    content = display.cleanUp(content);
-    comm.writeString(content, thisMode, tack, teck, tick, tock, tuck);
-    display.printString(content, thisMode, tack, teck, tick, tock, tuck);
-    // if (name.equals("ticker") && channel != ENERGY && channel != HELLO && channel != BYE) {
-    //   reel.pages.add(new Page("", INSTANT, 1, 10, content.length()/2, 0, 0));
-    // }
-
-    if (debug) {
-      println(name+"|"+thisMode+"|"+tack+"|"+teck+"|"+tick+"|"+tock+"|"+tuck+"|"+content);
+    if (thisMode > 0) {
+      // if (content.length() > 256 - comm.headerLength - 2) content = content.substring(0, 256-comm.headerLength-2); // restrict content to buffer size !!!
+      if (content.length() == 128 - comm.headerLength - 1) content += " "; // avoid packets of 127, they crash, hack!!! check!!!
+      content = display.cleanUp(content);
+      comm.writeString(content, thisMode, tack, teck, tick, tock, tuck);
+      display.printString(content, thisMode, tack, teck, tick, tock, tuck);
+      if (verbose) println (name+"|"+thisMode+"|"+tack+"|"+teck+"|"+tick+"|"+tock+"|"+tuck+"|"+content);
     }
   }
 }
@@ -173,9 +201,6 @@ class Page {
   }
 }
 
-
-
-
 //////////
 // REEL
 //////////
@@ -186,7 +211,7 @@ class Reel extends Teleobject {
   }
 
   void init() {
-    comm = new Comm(parent);
+    comm = new Comm(parent, this);
     display = new ReelDisplay();
     comm.portNumber = "1441";
     comm.targetDeviceAddress = "C0:70:75:10:D9:AF";
@@ -211,19 +236,19 @@ class Reel extends Teleobject {
   void printPages() {
     ready = true;
     switch(channel) {
-      case HELLO:
+    case HELLO:
       pages.add(new Page("", TICKER, 0, 0, 0, 0, 0));
       break;
 
-      case BYE:
+    case BYE:
       pages.add(new Page("", BLANK, 0, 0, 0, 0, 0));
       break;
 
-      case ENERGY:
+    case ENERGY:
       pages.add(new Page("", BATTERY, 0, 0, 0, 0, 0));
       break;
 
-      default:
+    default:
     }
   }
 }
@@ -240,6 +265,7 @@ class Frame extends Teleobject {
 
 class Display {
   boolean busy;
+  int mode, lastMode;
 
   Display() {
   }
@@ -258,9 +284,5 @@ class Display {
   }
 
   void printString(String thisString, int thisMode, int tack, int teck, int tick, int tock, int tuck) {
-  }
-
-  char getEqChar(int val) {
-    return ' ';
   }
 }

@@ -27,7 +27,7 @@ boolean forcelogin = false;
 
 boolean sync = true;
 
-boolean android = false;
+boolean android = true;
 
 Time time;
 Alpha alpha;
@@ -48,7 +48,7 @@ Twitter twitter;
 Messaging messaging;
 
 void setup() {
-  size(1600, 900);
+  //size(1600, 900);
   orientation(LANDSCAPE);
 
   time = new Time();

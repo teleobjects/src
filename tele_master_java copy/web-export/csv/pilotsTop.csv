@@ -1,0 +1,13 @@
+name,shape,command
+settings,settings,100
+wifi,wifi,102
+online,world,103
+scan,bulb,-10
+bluetooth,bluetooth,101
+energy,battery,104
+orientation,axis,105
+time,time,106
+sync,pulse,-20
+location,location,108
+navigation,compass,109
+logout,power,-11
